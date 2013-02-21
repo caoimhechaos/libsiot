@@ -1,0 +1,62 @@
+#                                               -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ([2.63])
+AC_INIT([libsiot], [0.1], [tonnerre@ancient-solutions.com])
+AC_CONFIG_SRCDIR([server.cc])
+AC_CONFIG_HEADERS([config.h])
+
+AM_INIT_AUTOMAKE
+LT_INIT
+
+# Checks for programs.
+AC_PROG_CXX
+AC_PROG_CC
+AC_PROG_LIBTOOL
+AC_LANG(C++)
+
+LIBRARY_VERSION=`echo $VERSION | $SED -e's/\./:/g'`
+AC_SUBST(LIBRARY_VERSION)
+
+OLDCXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$CXXFLAGS -std=c++11"
+AC_MSG_CHECKING([whether $CXX accepts -std=c++11])
+AC_LINK_IFELSE([AC_LANG_CALL([], [main])], [AC_MSG_RESULT(yes)],
+	[AC_MSG_RESULT(no)
+	 CXXFLAGS="$OLDCXXFLAGS -std=c++0x"
+	 AC_MSG_CHECKING([whether $CXX accepts -std=c++0x])
+	 AC_LINK_IFELSE([AC_LANG_CALL([], [main])], [AC_MSG_RESULT(yes)],
+	 [AC_MSG_RESULT(no); CXXFLAGS="$OLDCXXFLAGS"])])
+unset OLDCXXFLAGS
+AC_SUBST(CXXFLAGS)
+
+# Checks for libraries.
+GTEST_LIBS=""
+QT_LIBS=""
+AC_CHECK_LIB([thread++], [main],
+	     [AC_LIBS="$AC_LIBS -lthread++"],
+	     [AC_ERROR(libthread++ is required)])
+AC_CHECK_LIB([toolbox], [main],
+	     [AC_LIBS="$AC_LIBS -ltoolbox"],
+	     [AC_ERROR(libtoolbox is required)])
+AC_CHECK_LIB([clib], [c_sockaddr2str],
+	     [AC_LIBS="$AC_LIBS -lclib"],
+	     [AC_ERROR(libclib is required)])
+AC_CHECK_LIB([gtest], [main],
+	     [GTEST_LIBS="$GTEST_LIBS -lgtest"])
+AC_CHECK_LIB([gtest_main], [main],
+	     [GTEST_LIBS="$GTEST_LIBS -lgtest_main"])
+AC_LIBS="$AC_LIBS"
+AC_SUBST(GTEST_LIBS)
+AC_SUBST(AC_LIBS)
+
+# Checks for header files.
+AC_CHECK_HEADERS([clib/clib.h toolbox/expvar.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+
+# Checks for library functions.
+
+AC_CONFIG_FILES([Makefile
+		 siot/Makefile])
+AC_OUTPUT
