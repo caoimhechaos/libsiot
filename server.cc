@@ -237,6 +237,8 @@ Server::ListenEpoll()
 							&ConnectionCallback::ConnectionTerminated,
 							conn);
 					executor_.Add(cc);
+					connections_.erase(events[n].data.fd);
+					delete conn;
 				}
 				else if (conn && (events[n].events & EPOLLERR))
 				{
