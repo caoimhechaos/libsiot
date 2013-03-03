@@ -37,6 +37,7 @@ namespace toolbox
 namespace siot
 {
 using std::string;
+class Server;
 
 // Prototype of a connection. The implementation may be OS specific.
 class Connection
@@ -53,6 +54,9 @@ public:
 
 	// Get a string describing the peer the socket connects to.
 	virtual string PeerAsText() = 0;
+
+	// Gets the server this connection is bound to.
+	virtual Server* GetServer() = 0;
 };
 }  // namespace siot
 }  // namespace toolbox

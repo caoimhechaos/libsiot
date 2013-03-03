@@ -27,14 +27,31 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <string>
+#include <sstream>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif /*  HAVE_SYS_TYPES_H */
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif /* HAVE_INTTYPES_H */
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
 
-// TODO(tonnerre): get rid of this hack
-#define HAVE_CLIB_HASH_H 1
+#ifdef HAVE_CLIB_CLIB_H
+#undef HAVE_CLIB_CLIB_H
 #include <clib/clib.h>
+#endif /* HAVE_CLIB_CLIB_H */
+
+#ifdef HAVE_SYS_EPOLL_H
+#include <sys/epoll.h>
+#endif /* HAVE_SYS_EPOLL_H */
 
 #include "siot/server.h"
 
@@ -46,7 +63,7 @@ namespace toolbox
 {
 namespace siot
 {
-ServerSetupException::ServerSetupException(std::string errmsg) noexcept
+ServerSetupException::ServerSetupException(string errmsg) noexcept
 : errmsg_(errmsg)
 {
 }
@@ -57,9 +74,10 @@ ServerSetupException::what() const noexcept
 	return errmsg_.c_str();
 }
 
-Server::Server(std::string addr, ConnectionCallback* connected,
+Server::Server(string addr, ConnectionCallback* connected,
 		uint32_t num_threads)
-: connected_(connected), executor_(num_threads)
+: connected_(connected), executor_(num_threads), maxconn_(num_threads),
+	num_threads_(num_threads), running_(true)
 {
 #ifdef _POSIX_SOURCE
 	int error = c_str2addrinfo(addr.c_str(), &info_);
@@ -70,6 +88,7 @@ Server::Server(std::string addr, ConnectionCallback* connected,
 	if (serverfd_ == -1)
 	{
 		freeaddrinfo(info_);
+		info_ = 0;
 		throw ServerSetupException(strerror(errno));
 	}
 #endif /* _POSIX_SOURCE */
@@ -78,50 +97,175 @@ Server::Server(std::string addr, ConnectionCallback* connected,
 Server::~Server()
 {
 #ifdef _POSIX_SOURCE
-	freeaddrinfo(info_);
+	if (info_)
+	{
+		freeaddrinfo(info_);
+		info_ = 0;
+	}
 	close(serverfd_);
 #endif /* _POSIX_SOURCE */
 }
 
-Server*
+void
+Server::Shutdown()
+{
+	running_ = false;
+}
+
+void
 Server::Listen()
 {
 #ifdef _POSIX_SOURCE
+#ifdef HAVE_EPOLL_CREATE
+	ListenEpoll();
+#else /* !HAVE_EPOLL_CREATE */
+#ifdef HAVE_KQUEUE
+	ListenKQueue();
+#else
+#ifdef HAVE_SELECT
+	ListenSelect();
+#else /* !HAVE_SELECT */
+	ListenPoll();
+#endif
+#endif /* HAVE_KQUEUE */
+#endif /* HAVE_EPOLL_CREATE */
+#endif /* _POSIX_SOURCE */
+}
+
+#ifdef _POSIX_SOURCE
+#ifdef HAVE_EPOLL_CREATE
+void
+Server::ListenEpoll()
+{
+	struct epoll_event ev, events[num_threads_];
 	socklen_t addrlen;
 	int error;
-
-	if (listen(serverfd_, maxconn_))
-	{
-		throw ServerSetupException(strerror(errno));
-	}
 
 	error = c_bind2addrinfo(serverfd_, info_);
 	if (error)
 	{
 		close(serverfd_);
 		freeaddrinfo(info_);
+		info_ = 0;
 		throw ServerSetupException(strerror(errno));
 	}
 
-	for (;;)
+	if (listen(serverfd_, maxconn_))
+		throw ServerSetupException(strerror(errno));
+
+	int epollfd = epoll_create(num_threads_);
+	if (epollfd == -1)
 	{
-		ScopedPtr<struct sockaddr_storage> addr(new sockaddr_storage);
-		int clientfd = accept(serverfd_,
-				(struct sockaddr*) addr.Get(), &addrlen);
-		if (clientfd == -1)
+		std::stringstream ss;
+		ss << num_threads_;
+		throw ServerSetupException(string("epoll_create (") +
+				ss.str() + "): " +
+				string(strerror(errno)));
+	}
+
+	ev.events = EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLHUP;
+	ev.data.fd = serverfd_;
+
+	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, serverfd_, &ev) == -1)
+		throw ServerSetupException("epoll_ctl: " +
+				string(strerror(errno)));
+
+	memset(events, 0, num_threads_ * sizeof(struct epoll_event));
+
+	while (running_)
+	{
+		int nfds = epoll_wait(epollfd, events, num_threads_, -1);
+		if (nfds == -1)
+			throw ServerSetupException("epoll_wait: " +
+					string(strerror(errno)));
+
+		for (int n = 0; n < nfds; ++n)
 		{
-			ScopedPtr<char> err(strerror(errno));
-			connected_->ConnectionFailed(string(err.Get()));
-			continue;
+			if (events[n].data.fd == serverfd_)
+			{
+				ScopedPtr<struct sockaddr_storage> addr(
+						new sockaddr_storage);
+				int clientfd = accept(serverfd_,
+						(struct sockaddr*) addr.Get(),
+						&addrlen);
+				if (clientfd == -1)
+				{
+					ScopedPtr<char> err(strerror(errno));
+					connected_->ConnectionFailed(string(
+								err.Get()));
+					continue;
+				}
+
+				Connection* conn = new UNIXSocketConnection(
+						this, clientfd,
+						addr.Release());
+				connections_[clientfd] = conn;
+				memset(events, 0, num_threads_ *
+						sizeof(struct epoll_event));
+
+				ev.events = EPOLLIN | EPOLLRDHUP | EPOLLERR |
+					EPOLLHUP | EPOLLET;
+				ev.data.fd = clientfd;
+
+				if (epoll_ctl(epollfd, EPOLL_CTL_ADD,
+							clientfd, &ev) == -1)
+				{
+					throw ServerSetupException(
+						"epoll_ctl: " +
+						string(strerror(errno)));
+				}
+
+				// Run connected_->ConnectionEstablished(conn)
+				google::protobuf::Closure* cc =
+					google::protobuf::NewCallback(
+							connected_.Get(),
+							&ConnectionCallback::ConnectionEstablished,
+							conn);
+				executor_.Add(cc);
+			}
+			else if (events[n].data.fd > 0)
+			{
+				Connection* conn = connections_[
+					events[n].data.fd];
+				if (conn && (events[n].events & (EPOLLHUP |
+								EPOLLRDHUP)))
+				{
+					// Call connected_->ConnectionTerminated(conn);
+					google::protobuf::Closure* cc =
+						google::protobuf::NewCallback(
+							connected_.Get(),
+							&ConnectionCallback::ConnectionTerminated,
+							conn);
+					executor_.Add(cc);
+				}
+				else if (conn && (events[n].events & EPOLLERR))
+				{
+					// Call connected_->Error(conn);
+					google::protobuf::Closure* cc =
+						google::protobuf::NewCallback(
+							connected_.Get(),
+							&ConnectionCallback::Error,
+							conn);
+					executor_.Add(cc);
+				}
+				else if (conn && (events[n].events & EPOLLIN))
+				{
+					// Call connected_->DataReady(conn);
+					google::protobuf::Closure* cc =
+						google::protobuf::NewCallback(
+							connected_.Get(),
+							&ConnectionCallback::DataReady,
+							conn);
+					executor_.Add(cc);
+				}
+			}
 		}
 
-		Connection* conn = new UNIXSocketConnection(clientfd,
-				addr.Release());
-		connected_->ConnectionEstablished(conn);
+		memset(events, 0, num_threads_ * sizeof(struct epoll_event));
 	}
-#endif /* _POSIX_SOURCE */
-	return this;
 }
+#endif /* HAVE_EPOLL_CREATE */
+#endif /* _POSIX_SOURCE */
 
 Server*
 Server::SetMaxConnections(int maxconn)
@@ -138,6 +282,25 @@ Server::SetConnectionCallback(ConnectionCallback* connected)
 }
 
 Connection::~Connection()
+{
+}
+
+ConnectionCallback::~ConnectionCallback()
+{
+}
+
+void
+ConnectionCallback::ConnectionFailed(std::string msg)
+{
+}
+
+void
+ConnectionCallback::ConnectionTerminated(Connection* conn)
+{
+}
+
+void
+ConnectionCallback::Error(Connection* conn)
 {
 }
 }  // namespace siot

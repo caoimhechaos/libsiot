@@ -1,4 +1,4 @@
-TESTS=			unixsocketconnection_test
+TESTS=			unixsocketconnection_test server_test
 check_PROGRAMS=		${TESTS}
 lib_LTLIBRARIES=	libsiot.la
 

@@ -43,9 +43,9 @@ namespace toolbox
 {
 namespace siot
 {
-UNIXSocketConnection::UNIXSocketConnection(int socketid,
+UNIXSocketConnection::UNIXSocketConnection(Server* srv, int socketid,
 		struct sockaddr_storage* peer)
-: socket_(socketid), peer_(peer)
+: socket_(socketid), peer_(peer), server_(srv)
 {
 }
 
@@ -80,6 +80,12 @@ UNIXSocketConnection::PeerAsText()
 {
 	ScopedPtr<char> addr_str(c_sockaddr2str(peer_));
 	return string(addr_str.Get());
+}
+
+Server*
+UNIXSocketConnection::GetServer()
+{
+	return server_;
 }
 }  // namespace siot
 }  // namespace toolbox
