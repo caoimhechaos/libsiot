@@ -34,6 +34,7 @@
 #include <toolbox/scopedptr.h>
 #include <siot/connection.h>
 #include <string>
+#include <map>
 
 namespace toolbox
 {
@@ -58,13 +59,27 @@ private:
 class ConnectionCallback
 {
 public:
+	virtual ~ConnectionCallback();
+
 	// This method is invoked when a new connection "conn" has been made
 	// to the server. The class should take ownership of the connection
 	// object.
 	virtual void ConnectionEstablished(Connection* conn) = 0;
 
 	// Report an error which occurred trying to establish the socket.
-	virtual void ConnectionFailed(string msg) = 0;
+	// By default, they're ignored.
+	virtual void ConnectionFailed(std::string msg);
+
+	// This indicates that data is available for reading on the given
+	// connection.
+	virtual void DataReady(Connection* conn) = 0;
+
+	// This is invoked to indicate a connection has been terminated and
+	// is about to be removed. The default is to ignore it.
+	virtual void ConnectionTerminated(Connection* conn);
+
+	// This is to report connection errors. The default is to ignore them.
+	virtual void Error(Connection* conn);
 };
 
 // The server class implements a server which accepts new connections and
@@ -94,17 +109,35 @@ public:
 
 	// Start listening on the given address. This call will block, so you
 	// may want to start it in a separate thread.
-	Server* Listen();
+	void Listen();
+
+	// Instruct the listener to stop listening after the next round.
+	void Shutdown();
 
 private:
 	ScopedPtr<ConnectionCallback> connected_;
 	threadpp::ThreadPool executor_;
 	int maxconn_;
 	uint32_t num_threads_;
+	bool running_;
 
 #ifdef _POSIX_SOURCE
 	struct addrinfo *info_;
 	int serverfd_;
+
+	std::map<int, Connection*> connections_;
+	void ListenPoll();
+#ifdef HAVE_SELECT
+	void ListenSelect();
+#endif /* HAVE_SELECT */
+
+#ifdef HAVE_KQUEUE
+	void ListenKQueue();
+#endif /* HAVE_KQUEUE */
+
+#ifdef HAVE_EPOLL_CREATE
+	void ListenEpoll();
+#endif /* HAVE_EPOLL_CREATE */
 #endif /* _POSIX_SOURCE */
 };
 }  // namespace siot

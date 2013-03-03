@@ -32,8 +32,8 @@ TEST_F(UnixSocketConnectionTest, ReadWrite)
 	EXPECT_FALSE(socketpair(AF_UNIX, SOCK_STREAM, 0, socks))
 		<< "Error establishing socket pair: " << strerror(errno);
 
-	UNIXSocketConnection one(socks[0], &oneaddr);
-	UNIXSocketConnection two(socks[1], &twoaddr);
+	UNIXSocketConnection one(0, socks[0], &oneaddr);
+	UNIXSocketConnection two(0, socks[1], &twoaddr);
 
 	EXPECT_EQ(11, one.Send("Hey, buddy!"));
 	EXPECT_EQ("Hey, buddy!", two.Receive());

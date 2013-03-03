@@ -30,6 +30,9 @@ AC_LINK_IFELSE([AC_LANG_CALL([], [main])], [AC_MSG_RESULT(yes)],
 unset OLDCXXFLAGS
 AC_SUBST(CXXFLAGS)
 
+# Hack to make libclib work under C++.
+AC_DEFINE(HAVE_CLIB_HASH_H, [1], [Hack to make clib not include hash.h])
+
 # Checks for libraries.
 GTEST_LIBS=""
 QT_LIBS=""
@@ -42,20 +45,26 @@ AC_CHECK_LIB([toolbox], [main],
 AC_CHECK_LIB([clib], [c_sockaddr2str],
 	     [AC_LIBS="$AC_LIBS -lclib"],
 	     [AC_ERROR(libclib is required)])
+AC_CHECK_LIB([protobuf], [main],
+	     [AC_LIBS="$AC_LIBS -lprotobuf"],
+	     [AC_ERROR(libprotobuf is required)])
 AC_CHECK_LIB([gtest], [main],
 	     [GTEST_LIBS="$GTEST_LIBS -lgtest"])
 AC_CHECK_LIB([gtest_main], [main],
 	     [GTEST_LIBS="$GTEST_LIBS -lgtest_main"])
+AC_CHECK_LIB([gmock], [main],
+	     [GTEST_LIBS="$GTEST_LIBS -lgmock"])
 AC_LIBS="$AC_LIBS"
 AC_SUBST(GTEST_LIBS)
 AC_SUBST(AC_LIBS)
 
 # Checks for header files.
-AC_CHECK_HEADERS([clib/clib.h toolbox/expvar.h])
+AC_CHECK_HEADERS([sys/epoll.h sys/kqueue.h clib/clib.h toolbox/expvar.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 
 # Checks for library functions.
+AC_CHECK_FUNCS([epoll_create epoll_create1 epoll_wait epoll_pwait])
 
 AC_CONFIG_FILES([Makefile
 		 siot/Makefile])

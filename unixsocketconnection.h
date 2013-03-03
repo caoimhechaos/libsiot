@@ -42,7 +42,7 @@ using toolbox::ScopedPtr;
 class UNIXSocketConnection : public Connection
 {
 public:
-	explicit UNIXSocketConnection(int socketid,
+	explicit UNIXSocketConnection(Server* srv, int socketid,
 			struct sockaddr_storage* peer);
 	virtual ~UNIXSocketConnection();
 
@@ -50,10 +50,12 @@ public:
 	virtual string Receive(size_t maxlen = -1, int flags = 0);
 	virtual ssize_t Send(string data, int flags = 0);
 	virtual string PeerAsText();
+	virtual Server* GetServer();
 
 private:
 	int socket_;
 	struct sockaddr_storage* peer_;
+	Server* server_;
 };
 }  // namespace siot
 }  // namespace toolbox
