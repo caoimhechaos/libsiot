@@ -38,6 +38,7 @@ class MockConnectionCallback : public ConnectionCallback
 public:
 	MOCK_METHOD1(ConnectionEstablished, void(Connection* conn));
 	MOCK_METHOD1(DataReady, void(Connection* conn));
+	MOCK_METHOD1(ConnectionTerminated, void(Connection* conn));
 };
 
 ACTION(CloseConnection) {
@@ -83,6 +84,8 @@ TEST_F(ServerTest, SystemTest)
 		.WillOnce(Return());
 	EXPECT_CALL(*cb, DataReady(A<Connection*>()))
 		.WillOnce(CloseConnection());
+	EXPECT_CALL(*cb, ConnectionTerminated(A<Connection*>()))
+		.WillOnce(Return());
 
 	ClosureThread ct(NewCallback(srv.Get(), &Server::Listen));
 	ct.Start();
