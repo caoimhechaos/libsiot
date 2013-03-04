@@ -55,7 +55,8 @@ public:
 	// Get a string describing the peer the socket connects to.
 	virtual string PeerAsText() = 0;
 
-	// Gets the server this connection is bound to.
+	// Gets the server this connection is bound to, or 0 if this is a
+	// client socket.
 	virtual Server* GetServer() = 0;
 };
 }  // namespace siot
