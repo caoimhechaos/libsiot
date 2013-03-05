@@ -58,7 +58,7 @@ public:
 	virtual ~LineBufferDecorator();
 
 	// Receive a line from the connected peer. The newline character
-	// (\n, \r\n) will not be transmitted.
+	// (\n, \r\n) will be returned as \n at the end of the line.
 	virtual string Receive(size_t ignored = 0, int flags = 0);
 
 	// Forwarded to wrapped connection object.
