@@ -58,6 +58,9 @@ public:
 	// Gets the server this connection is bound to, or 0 if this is a
 	// client socket.
 	virtual Server* GetServer() = 0;
+
+	// Determine if the end of the receivable data has been reached.
+	virtual bool IsEOF() = 0;
 };
 }  // namespace siot
 }  // namespace toolbox

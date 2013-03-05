@@ -27,39 +27,53 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef INCLUDED_UNIXSOCKETCONNECTION_H
-#define INCLUDED_UNIXSOCKETCONNECTION_H 1
+#ifndef INCLUDED_SIOT_LINEBUFFERDECORATOR_H
+#define INCLUDED_SIOT_LINEBUFFERDECORATOR_H 1
 
+#include <list>
+#include <string>
 #include <toolbox/scopedptr.h>
-#include "siot/connection.h"
+#include <siot/connection.h>
 
 namespace toolbox
 {
 namespace siot
 {
-using toolbox::ScopedPtr;
+using std::string;
 
-class UNIXSocketConnection : public Connection
+/**
+ * Reads data from a connection and returns just the first line on each call.
+ * The remainder will be stored in a buffer until it is needed. This is very
+ * helpful when dealing with line based protocols.
+ *
+ * This will take ownership of the connection handle.
+ *
+ * The Send() part is unchanged, i.e. you can send data in any format you
+ * like.
+ */
+class LineBufferDecorator : public Connection
 {
 public:
-	explicit UNIXSocketConnection(Server* srv, int socketid,
-			struct sockaddr_storage* peer);
-	virtual ~UNIXSocketConnection();
+	explicit LineBufferDecorator(Connection* wrapped);
+	virtual ~LineBufferDecorator();
 
-	// Implements Connection.
-	virtual string Receive(size_t maxlen = -1, int flags = 0);
+	// Receive a line from the connected peer. The newline character
+	// (\n, \r\n) will not be transmitted.
+	virtual string Receive(size_t ignored = 0, int flags = 0);
+
+	// Forwarded to wrapped connection object.
 	virtual ssize_t Send(string data, int flags = 0);
 	virtual string PeerAsText();
 	virtual Server* GetServer();
 	virtual bool IsEOF();
 
 private:
-	int socket_;
-	struct sockaddr_storage* peer_;
-	Server* server_;
-	bool eof_;
+	ScopedPtr<Connection> wrapped_;
+	string remainder_;
+	std::list<string> remaining_lines_;
 };
+
 }  // namespace siot
 }  // namespace toolbox
 
-#endif /* INCLUDED_UNIXSOCKETCONNECTION_H */
+#endif /* INCLUDED_SIOT_LINEBUFFERDECORATOR_H */
