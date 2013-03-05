@@ -51,11 +51,13 @@ public:
 	virtual ssize_t Send(string data, int flags = 0);
 	virtual string PeerAsText();
 	virtual Server* GetServer();
+	virtual bool IsEOF();
 
 private:
 	int socket_;
 	struct sockaddr_storage* peer_;
 	Server* server_;
+	bool eof_;
 };
 }  // namespace siot
 }  // namespace toolbox

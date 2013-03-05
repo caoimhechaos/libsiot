@@ -45,7 +45,7 @@ namespace siot
 {
 UNIXSocketConnection::UNIXSocketConnection(Server* srv, int socketid,
 		struct sockaddr_storage* peer)
-: socket_(socketid), peer_(peer), server_(srv)
+: socket_(socketid), peer_(peer), server_(srv), eof_(false)
 {
 }
 
@@ -66,6 +66,13 @@ UNIXSocketConnection::Receive(size_t maxlen, int flags)
 	ScopedPtr<char> buf(new char[len]);
 
 	len = recv(socket_, buf.Get(), len, flags);
+
+	if (len == -1)
+	{
+		len = 0;
+		if (errno == EBADF || errno == EINVAL || errno == ENOTCONN)
+			eof_ = true;
+	}
 	return string(buf.Get(), len);
 }
 
@@ -87,5 +94,12 @@ UNIXSocketConnection::GetServer()
 {
 	return server_;
 }
+
+bool
+UNIXSocketConnection::IsEOF()
+{
+	return eof_;
+}
+
 }  // namespace siot
 }  // namespace toolbox

@@ -27,8 +27,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef INCLUDED_SIOT_CONNECTION_H
-#define INCLUDED_SIOT_CONNECTION_H 1
+#include "siot/linebufferdecorator.h"
+#include "siot/connection.h"
 
 #include <string>
 
@@ -37,32 +37,78 @@ namespace toolbox
 namespace siot
 {
 using std::string;
-class Server;
 
-// Prototype of a connection. The implementation may be OS specific.
-class Connection
+LineBufferDecorator::LineBufferDecorator(Connection* wrapped)
+: wrapped_(wrapped)
 {
-public:
-	// Close the connection.
-	virtual ~Connection();
+}
 
-	// Read up to maxlen bytes from the connection.
-	virtual string Receive(size_t maxlen = -1, int flags = 0) = 0;
+LineBufferDecorator::~LineBufferDecorator()
+{
+}
 
-	// Send the bytes referred to by "data" over the connection.
-	virtual ssize_t Send(string data, int flags = 0) = 0;
+string
+LineBufferDecorator::Receive(size_t ignored, int flags)
+{
+	if (remaining_lines_.size() == 0)
+	{
+		while (remainder_.rfind("\n") == string::npos &&
+				!wrapped_->IsEOF())
+		{
+			string data = wrapped_->Receive();
+			if (data.length() > 0)
+				remainder_ += data;
+			else
+				break;
+		}
 
-	// Get a string describing the peer the socket connects to.
-	virtual string PeerAsText() = 0;
+		string::size_type sz;
+		while ((sz = remainder_.find("\n")) != string::npos)
+		{
+			if (remainder_[sz-1] == '\r')
+				remaining_lines_.push_back(
+						remainder_.substr(0, sz-1));
+			else
+				remaining_lines_.push_back(
+						remainder_.substr(0, sz));
+			remainder_ = remainder_.substr(sz + 1);
+		}
 
-	// Gets the server this connection is bound to, or 0 if this is a
-	// client socket.
-	virtual Server* GetServer() = 0;
+		// Still haven't found anything? Then we should give up.
+		// Either we're at the end, then IsEOF() will be set, or
+		// we'll be more lucky in the next round.
+		if (remaining_lines_.size() == 0)
+			return "";
+	}
 
-	// Determine if the end of the receivable data has been reached.
-	virtual bool IsEOF() = 0;
-};
+	string ret = remaining_lines_.front();
+	remaining_lines_.pop_front();
+	return ret + "\n";
+}
+
+ssize_t
+LineBufferDecorator::Send(string data, int flags)
+{
+	return wrapped_->Send(data, flags);
+}
+
+string
+LineBufferDecorator::PeerAsText()
+{
+	return wrapped_->PeerAsText();
+}
+
+Server*
+LineBufferDecorator::GetServer()
+{
+	return wrapped_->GetServer();
+}
+
+bool
+LineBufferDecorator::IsEOF()
+{
+	return wrapped_->IsEOF() && remaining_lines_.size() == 0;
+}
+
 }  // namespace siot
 }  // namespace toolbox
-
-#endif /* INCLUDED_SIOT_CONNECTION_H */
