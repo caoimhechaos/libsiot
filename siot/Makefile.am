@@ -1,2 +1,2 @@
 siotincludedir=			${includedir}/siot
-siotinclude_HEADERS=		connection.h server.h
+siotinclude_HEADERS=		connection.h server.h linebufferdecorator.h
