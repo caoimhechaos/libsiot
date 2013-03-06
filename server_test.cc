@@ -8,7 +8,6 @@
 
 #include <iostream>
 
-#include <glog/logging.h>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
