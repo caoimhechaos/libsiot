@@ -2,7 +2,6 @@
  * Tests for the UNIX socket connection implementation.
  */
 
-#include <glog/logging.h>
 #include <gtest/gtest.h>
 
 #include <sys/types.h>
