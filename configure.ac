@@ -32,6 +32,7 @@ AC_SUBST(CXXFLAGS)
 
 # Hack to make libclib work under C++.
 AC_DEFINE(HAVE_CLIB_HASH_H, [1], [Hack to make clib not include hash.h])
+AC_DEFINE(_GLIBCXX_USE_C99, [1], [Use C99 for the glibc++ parts.])
 
 # Checks for libraries.
 GTEST_LIBS=""
@@ -59,12 +60,19 @@ AC_SUBST(GTEST_LIBS)
 AC_SUBST(AC_LIBS)
 
 # Checks for header files.
-AC_CHECK_HEADERS([sys/epoll.h sys/kqueue.h clib/clib.h toolbox/expvar.h])
+AC_CHECK_HEADERS([sys/epoll.h sys/kqueue.h clib/clib.h toolbox/expvar.h \
+		  inttypes.h netdb.h netinet/in.h stdint.h sys/socket.h \
+		  unistd.h errno.h sys/errno.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
+AC_CHECK_HEADER_STDBOOL
+AC_TYPE_SIZE_T
+AC_TYPE_SSIZE_T
+AC_TYPE_UINT32_T
 
 # Checks for library functions.
-AC_CHECK_FUNCS([epoll_create epoll_create1 epoll_wait epoll_pwait])
+AC_CHECK_FUNCS([epoll_create epoll_create1 epoll_wait epoll_pwait \
+		memset socket strerror])
 
 AC_CONFIG_FILES([Makefile
 		 siot/Makefile])
