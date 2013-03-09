@@ -40,9 +40,31 @@
 #ifdef HAVE_INTTYPES_H
 #include <inttypes.h>
 #endif /* HAVE_INTTYPES_H */
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif /* HAVE_NETDB_H */
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif /* HAVE_UNISTD_H */
+#ifdef HAVE_MEMORY_H
+#include <memory.h>
+#endif /* HAVE_MEMORY_H */
+
+#ifdef HAVE_SYS_ERRNO_H
+#include <sys/errno.h>
+#endif /* HAVE_SYS_ERRNO_H */
+#ifdef HAVE_ERRNO_H
+#include <errno.h>
+#endif /* HAVE_ERRNO_H */
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif /* HAVE_STRING_H */
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif /* HAVE_STRINGS_H */
 
 #ifdef HAVE_CLIB_CLIB_H
 #undef HAVE_CLIB_CLIB_H
@@ -58,6 +80,10 @@
 #ifdef _POSIX_SOURCE
 #include "unixsocketconnection.h"
 #endif /* _POSIX_SOURCE */
+
+#ifndef HAVE_STRERROR
+#define strerror(x) std::to_string(x)
+#endif /* HAVE_STRERROR */
 
 namespace toolbox
 {

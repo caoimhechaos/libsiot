@@ -27,10 +27,25 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif /* HAVE_SYS_TYPES_H */
 #include <sys/socket.h>
+#ifdef HAVE_STDINT_H
 #include <stdint.h>
+#endif /* HAVE_STDINT_H */
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif /* HAVE_UNISTD_H */
+#ifdef HAVE_SYS_ERRNO_H
+#include <sys/errno.h>
+#endif /* HAVE_SYS_ERRNO_H */
+#ifdef HAVE_ERRNO_H
+#include <errno.h>
+#endif /* HAVE_ERRNO_H */
 
 // TODO(caoimhe): get rid of this hack
 #define HAVE_CLIB_HASH_H 1
