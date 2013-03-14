@@ -40,8 +40,15 @@
 #ifdef HAVE_INTTYPES_H
 #include <inttypes.h>
 #endif /* HAVE_INTTYPES_H */
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif /* HAVE_STDINT_H */
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif /* HAVE_NETDB_H */
 #include <unistd.h>
 
 #ifdef HAVE_CLIB_CLIB_H
@@ -77,7 +84,7 @@ ServerSetupException::what() const noexcept
 Server::Server(string addr, ConnectionCallback* connected,
 		uint32_t num_threads)
 : connected_(connected), executor_(num_threads), maxconn_(num_threads),
-	num_threads_(num_threads), running_(true)
+	num_threads_(num_threads), max_idle_(-1), running_(true)
 {
 #ifdef _POSIX_SOURCE
 	int error = c_str2addrinfo(addr.c_str(), &info_);
@@ -102,6 +109,7 @@ Server::~Server()
 		freeaddrinfo(info_);
 		info_ = 0;
 	}
+	shutdown(serverfd_, SHUT_RDWR);
 	close(serverfd_);
 #endif /* _POSIX_SOURCE */
 }
@@ -174,7 +182,8 @@ Server::ListenEpoll()
 
 	while (running_)
 	{
-		int nfds = epoll_wait(epollfd, events, num_threads_, -1);
+		int nfds = epoll_wait(epollfd, events, num_threads_,
+				max_idle_ < 0 ? -1 : max_idle_ * 1000);
 		if (nfds == -1)
 			throw ServerSetupException("epoll_wait: " +
 					string(strerror(errno)));
@@ -238,6 +247,16 @@ Server::ListenEpoll()
 							conn);
 					executor_.Add(cc);
 					connections_.erase(events[n].data.fd);
+
+					if (epoll_ctl(epollfd, EPOLL_CTL_DEL,
+								events[n].data.fd,
+								NULL) == -1)
+					{
+						throw ServerSetupException(
+								"epoll_ctl: " +
+								string(strerror(errno)));
+					}
+
 					delete conn;
 				}
 				else if (conn && (events[n].events & EPOLLERR))
@@ -263,6 +282,33 @@ Server::ListenEpoll()
 			}
 		}
 
+		uint64_t tm = time(NULL);
+		for (std::pair<int, Connection*> s : connections_)
+		{
+			Connection* conn = s.second;
+			if (tm - conn->GetLastUse() > max_idle_)
+			{
+				// Call connected_->ConnectionTerminated(conn);
+				google::protobuf::Closure* cc =
+					google::protobuf::NewCallback(
+							connected_.Get(),
+							&ConnectionCallback::ConnectionTerminated,
+							conn);
+				executor_.Add(cc);
+
+				if (epoll_ctl(epollfd, EPOLL_CTL_DEL,
+							s.first, NULL) == -1)
+				{
+					throw ServerSetupException(
+						"epoll_ctl: " +
+						string(strerror(errno)));
+				}
+
+				connections_.erase(s.first);
+				delete conn;
+			}
+		}
+
 		memset(events, 0, num_threads_ * sizeof(struct epoll_event));
 	}
 }
@@ -281,6 +327,12 @@ Server::SetConnectionCallback(ConnectionCallback* connected)
 {
 	connected_.Reset(connected);
 	return this;
+}
+
+void
+Server::SetMaxIdle(int max_idle)
+{
+	max_idle_ = max_idle;
 }
 
 Connection::~Connection()

@@ -59,9 +59,15 @@ AC_SUBST(GTEST_LIBS)
 AC_SUBST(AC_LIBS)
 
 # Checks for header files.
-AC_CHECK_HEADERS([sys/epoll.h sys/kqueue.h clib/clib.h toolbox/expvar.h])
+AC_CHECK_HEADERS([sys/epoll.h sys/kqueue.h clib/clib.h toolbox/expvar.h	\
+		  inttypes.h stdint.h netdb.h netinet/in.h sys/socket.h])
+AC_CHECK_HEADER_STDBOOL
 
 # Checks for typedefs, structures, and compiler characteristics.
+AC_TYPE_SIZE_T
+AC_TYPE_SSIZE_T
+AC_TYPE_UINT32_T
+AC_TYPE_UINT64_T
 
 # Checks for library functions.
 AC_CHECK_FUNCS([epoll_create epoll_create1 epoll_wait epoll_pwait])

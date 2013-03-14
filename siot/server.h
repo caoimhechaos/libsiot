@@ -107,6 +107,11 @@ public:
 	// established.
 	Server* SetConnectionCallback(ConnectionCallback* connected);
 
+	// Sets the maximum number of seconds a connection may be idle before
+	// it is automatically terminated. Setting this to 0 or a negative
+	// value (the default) means they're never terminated.
+	void SetMaxIdle(int max_idle);
+
 	// Start listening on the given address. This call will block, so you
 	// may want to start it in a separate thread.
 	void Listen();
@@ -119,6 +124,7 @@ private:
 	threadpp::ThreadPool executor_;
 	int maxconn_;
 	uint32_t num_threads_;
+	int max_idle_;
 	bool running_;
 
 #ifdef _POSIX_SOURCE

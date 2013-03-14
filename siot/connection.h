@@ -61,6 +61,10 @@ public:
 
 	// Determine if the end of the receivable data has been reached.
 	virtual bool IsEOF() = 0;
+
+	// Determine when the last bit of information was exchanged over
+	// the socket.
+	virtual uint64_t GetLastUse() = 0;
 };
 }  // namespace siot
 }  // namespace toolbox

@@ -112,6 +112,48 @@ TEST_F(ServerTest, SystemTest)
 	ct.WaitForFinished();
 }
 
+TEST_F(ServerTest, ConnectionTimeout)
+{
+	struct addrinfo *info;
+	char buf[5];
+	int sock;
+	int fake_argc = 0;
+	char** fake_argv = { 0 };
+	::testing::InitGoogleMock(&fake_argc, fake_argv);
+	ScopedPtr<Server> srv(0);
+	MockConnectionCallback* cb = new MockConnectionCallback();
+
+	ASSERT_NO_THROW(srv.Reset(new Server("[::1]:12347", cb, 1)));
+	srv->SetMaxIdle(3);
+
+	EXPECT_CALL(*cb, ConnectionEstablished(A<Connection*>()))
+		.WillOnce(Return());
+	EXPECT_CALL(*cb, ConnectionTerminated(A<Connection*>()))
+		.WillOnce(Return());
+
+	ClosureThread ct(NewCallback(srv.Get(), &Server::Listen));
+	ct.Start();
+
+	EXPECT_NE(-1, sock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP))
+		<< "Error creating socket: " << strerror(errno);
+
+	EXPECT_EQ(0, c_str2addrinfo("[::1]:12347", &info))
+		<< "Error converting to addrinfo: " << strerror(errno);
+	EXPECT_EQ(0, c_connect2addrinfo(sock, info))
+		<< "Error connecting: " << strerror(errno);
+	freeaddrinfo(info);
+
+	EXPECT_EQ(0, recv(sock, buf, 5, 0));
+
+	EXPECT_EQ(0, shutdown(sock, SHUT_RDWR))
+		<< "Error shutting down: " << strerror(errno);
+	EXPECT_EQ(0, close(sock))
+		<< "Error closing socket: " << strerror(errno);
+
+	srv->Shutdown();
+	ct.WaitForFinished();
+}
+
 }  // namespace testing
 }  // namespace siot
 }  // namespace toolbox
