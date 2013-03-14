@@ -199,9 +199,8 @@ Server::ListenEpoll()
 						&addrlen);
 				if (clientfd == -1)
 				{
-					ScopedPtr<char> err(strerror(errno));
 					connected_->ConnectionFailed(string(
-								err.Get()));
+								strerror(errno)));
 					continue;
 				}
 
