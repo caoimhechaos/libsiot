@@ -52,12 +52,14 @@ public:
 	virtual string PeerAsText();
 	virtual Server* GetServer();
 	virtual bool IsEOF();
+	virtual uint64_t GetLastUse();
 
 private:
 	int socket_;
 	struct sockaddr_storage* peer_;
 	Server* server_;
 	bool eof_;
+	uint64_t last_use_;
 };
 }  // namespace siot
 }  // namespace toolbox

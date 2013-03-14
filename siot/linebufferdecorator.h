@@ -66,6 +66,7 @@ public:
 	virtual string PeerAsText();
 	virtual Server* GetServer();
 	virtual bool IsEOF();
+	virtual uint64_t GetLastUse();
 
 private:
 	ScopedPtr<Connection> wrapped_;

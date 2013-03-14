@@ -110,5 +110,11 @@ LineBufferDecorator::IsEOF()
 	return wrapped_->IsEOF() && remaining_lines_.size() == 0;
 }
 
+uint64_t
+LineBufferDecorator::GetLastUse()
+{
+	return wrapped_->GetLastUse();
+}
+
 }  // namespace siot
 }  // namespace toolbox

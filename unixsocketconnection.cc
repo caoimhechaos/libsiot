@@ -28,9 +28,18 @@
  */
 
 #include <sys/types.h>
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif /* HAVE_INTTYPES_H */
+#ifdef HAVE_STDINT_H
 #include <stdint.h>
+#endif /* HAVE_STDINT_H */
 #include <unistd.h>
+
+#include <time.h>
 
 // TODO(tonnerre): get rid of this hack
 #define HAVE_CLIB_HASH_H 1
@@ -45,7 +54,8 @@ namespace siot
 {
 UNIXSocketConnection::UNIXSocketConnection(Server* srv, int socketid,
 		struct sockaddr_storage* peer)
-: socket_(socketid), peer_(peer), server_(srv), eof_(false)
+: socket_(socketid), peer_(peer), server_(srv), eof_(false),
+	last_use_(time(NULL))
 {
 }
 
@@ -73,12 +83,14 @@ UNIXSocketConnection::Receive(size_t maxlen, int flags)
 		if (errno == EBADF || errno == EINVAL || errno == ENOTCONN)
 			eof_ = true;
 	}
+	last_use_ = time(NULL);
 	return string(buf.Get(), len);
 }
 
 ssize_t
 UNIXSocketConnection::Send(string data, int flags)
 {
+	last_use_ = time(NULL);
 	return send(socket_, data.c_str(), data.size(), flags);
 }
 
@@ -99,6 +111,12 @@ bool
 UNIXSocketConnection::IsEOF()
 {
 	return eof_;
+}
+
+uint64_t
+UNIXSocketConnection::GetLastUse()
+{
+	return last_use_;
 }
 
 }  // namespace siot
