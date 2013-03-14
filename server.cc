@@ -282,29 +282,33 @@ Server::ListenEpoll()
 		}
 
 		uint64_t tm = time(NULL);
-		for (std::pair<int, Connection*> s : connections_)
+		if (max_idle_ > 0)
 		{
-			Connection* conn = s.second;
-			if (tm - conn->GetLastUse() > max_idle_)
+			for (std::pair<int, Connection*> s : connections_)
 			{
-				// Call connected_->ConnectionTerminated(conn);
-				google::protobuf::Closure* cc =
-					google::protobuf::NewCallback(
-							connected_.Get(),
-							&ConnectionCallback::ConnectionTerminated,
-							conn);
-				executor_.Add(cc);
-
-				if (epoll_ctl(epollfd, EPOLL_CTL_DEL,
-							s.first, NULL) == -1)
+				Connection* conn = s.second;
+				if (tm - conn->GetLastUse() > max_idle_)
 				{
-					throw ServerSetupException(
-						"epoll_ctl: " +
-						string(strerror(errno)));
-				}
+					// Call connected_->ConnectionTerminated(conn);
+					google::protobuf::Closure* cc =
+						google::protobuf::NewCallback(
+								connected_.Get(),
+								&ConnectionCallback::ConnectionTerminated,
+								conn);
+					executor_.Add(cc);
 
-				connections_.erase(s.first);
-				delete conn;
+					if (epoll_ctl(epollfd, EPOLL_CTL_DEL,
+								s.first, NULL)
+							== -1)
+					{
+						throw ServerSetupException(
+								"epoll_ctl: " +
+								string(strerror(errno)));
+					}
+
+					connections_.erase(s.first);
+					delete conn;
+				}
 			}
 		}
 
