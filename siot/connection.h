@@ -65,6 +65,9 @@ public:
 	// Determine when the last bit of information was exchanged over
 	// the socket.
 	virtual uint64_t GetLastUse() = 0;
+
+	// Sets the connection to blocking or non-blocking state.
+	virtual void SetBlocking(bool blocking = true) = 0;
 };
 }  // namespace siot
 }  // namespace toolbox
