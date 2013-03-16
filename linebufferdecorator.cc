@@ -38,9 +38,11 @@ namespace siot
 {
 using std::string;
 
-LineBufferDecorator::LineBufferDecorator(Connection* wrapped)
-: wrapped_(wrapped)
+LineBufferDecorator::LineBufferDecorator(Connection* wrapped, bool own)
+: wrapped_(wrapped), owned_(0)
 {
+	if (own)
+		owned_.Reset(wrapped);
 }
 
 LineBufferDecorator::~LineBufferDecorator()
