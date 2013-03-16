@@ -46,7 +46,8 @@ using std::string;
  * The remainder will be stored in a buffer until it is needed. This is very
  * helpful when dealing with line based protocols.
  *
- * This will take ownership of the connection handle.
+ * By default, this takes ownership of the connection handle. If you don't
+ * want this behavior, set the own parameter to false.
  *
  * The Send() part is unchanged, i.e. you can send data in any format you
  * like.
@@ -54,7 +55,10 @@ using std::string;
 class LineBufferDecorator : public Connection
 {
 public:
-	explicit LineBufferDecorator(Connection* wrapped);
+	// Creates a new line buffer around the connection "wrapped". If
+	// "own" is true (which is the default), this will take ownership
+	// of "wrapped".
+	explicit LineBufferDecorator(Connection* wrapped, bool own = true);
 	virtual ~LineBufferDecorator();
 
 	// Receive a line from the connected peer. The newline character
@@ -69,7 +73,8 @@ public:
 	virtual uint64_t GetLastUse();
 
 private:
-	ScopedPtr<Connection> wrapped_;
+	Connection* wrapped_;
+	ScopedPtr<Connection> owned_;
 	string remainder_;
 	std::list<string> remaining_lines_;
 };
