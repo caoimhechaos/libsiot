@@ -62,7 +62,7 @@ AC_SUBST(AC_LIBS)
 # Checks for header files.
 AC_CHECK_HEADERS([sys/epoll.h sys/kqueue.h clib/clib.h toolbox/expvar.h \
 		  inttypes.h netdb.h netinet/in.h stdint.h sys/socket.h \
-		  unistd.h errno.h sys/errno.h])
+		  unistd.h errno.h sys/errno.h fcntl.h])
 AC_CHECK_HEADER_STDBOOL
 
 # Checks for typedefs, structures, and compiler characteristics.

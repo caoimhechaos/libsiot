@@ -118,5 +118,11 @@ LineBufferDecorator::GetLastUse()
 	return wrapped_->GetLastUse();
 }
 
+void
+LineBufferDecorator::SetBlocking(bool blocking)
+{
+	wrapped_->SetBlocking(blocking);
+}
+
 }  // namespace siot
 }  // namespace toolbox

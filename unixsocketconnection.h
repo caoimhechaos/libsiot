@@ -53,6 +53,7 @@ public:
 	virtual Server* GetServer();
 	virtual bool IsEOF();
 	virtual uint64_t GetLastUse();
+	virtual void SetBlocking(bool blocking = true);
 
 private:
 	int socket_;

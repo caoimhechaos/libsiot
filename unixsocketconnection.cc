@@ -46,6 +46,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif /* HAVE_FCNTL_H */
 #ifdef HAVE_SYS_ERRNO_H
 #include <sys/errno.h>
 #endif /* HAVE_SYS_ERRNO_H */
@@ -131,6 +134,21 @@ uint64_t
 UNIXSocketConnection::GetLastUse()
 {
 	return last_use_;
+}
+
+void
+UNIXSocketConnection::SetBlocking(bool blocking)
+{
+	if (blocking)
+	{
+		int val = fcntl(socket_, F_GETFL, 0);
+		val &= ~O_NONBLOCK;
+		fcntl(socket_, F_SETFL, val);
+	}
+	else
+	{
+		fcntl(socket_, F_SETFL, O_NONBLOCK);
+	}
 }
 
 }  // namespace siot
