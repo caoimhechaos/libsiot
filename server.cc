@@ -271,7 +271,8 @@ Server::ListenEpoll()
 
 					if (epoll_ctl(epollfd, EPOLL_CTL_DEL,
 								events[n].data.fd,
-								NULL) == -1)
+								NULL) == -1
+							&& errno != EBADFD)
 					{
 						throw ServerSetupException(
 								"epoll_ctl: " +
