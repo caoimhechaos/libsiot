@@ -78,8 +78,7 @@ UNIXSocketConnection::UNIXSocketConnection(Server* srv, int socketid,
 
 UNIXSocketConnection::~UNIXSocketConnection()
 {
-	shutdown(socket_, SHUT_RDWR);
-	close(socket_);
+	Shutdown();
 }
 
 string
@@ -149,6 +148,14 @@ UNIXSocketConnection::SetBlocking(bool blocking)
 	{
 		fcntl(socket_, F_SETFL, O_NONBLOCK);
 	}
+}
+
+void
+UNIXSocketConnection::Shutdown()
+{
+	Deregister();
+	shutdown(socket_, SHUT_RDWR);
+	close(socket_);
 }
 
 }  // namespace siot
