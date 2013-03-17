@@ -32,6 +32,7 @@ public:
 	MOCK_METHOD0(IsEOF, bool());
 	MOCK_METHOD0(GetLastUse, uint64_t());
 	MOCK_METHOD1(SetBlocking, void(bool));
+	MOCK_METHOD0(Shutdown, void());
 };
 
 class LineBufferDecoratorTest : public ::testing::Test

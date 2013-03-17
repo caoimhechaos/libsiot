@@ -357,6 +357,16 @@ Server::SetConnectionCallback(ConnectionCallback* connected)
 }
 
 void
+Server::DequeueConnection(Connection* conn)
+{
+	for (std::pair<int, Connection*> it : connections_)
+	{
+		if (it.second == conn)
+			connections_.erase(it.first);
+	}
+}
+
+void
 Server::SetMaxIdle(int max_idle)
 {
 	max_idle_ = max_idle;
@@ -364,6 +374,14 @@ Server::SetMaxIdle(int max_idle)
 
 Connection::~Connection()
 {
+}
+
+void
+Connection::Deregister()
+{
+	Server* srv = this->GetServer();
+	if (srv)
+		srv->DequeueConnection(this);
 }
 
 ConnectionCallback::~ConnectionCallback()

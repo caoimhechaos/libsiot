@@ -107,6 +107,10 @@ public:
 	// established.
 	Server* SetConnectionCallback(ConnectionCallback* connected);
 
+	// Removes the given connection from the pool of connections which
+	// are watched (i.e. we stop monitoring events and so forth).
+	void DequeueConnection(Connection* conn);
+
 	// Sets the maximum number of seconds a connection may be idle before
 	// it is automatically terminated. Setting this to 0 or a negative
 	// value (the default) means they're never terminated.
@@ -116,7 +120,9 @@ public:
 	// may want to start it in a separate thread.
 	void Listen();
 
-	// Instruct the listener to stop listening after the next round.
+	// Instruct the listener to stop listening after the next round. A
+	// round ends either after a timeout (see SetMaxIdle) or when a new
+	// event (connection, data, disconnection) is received.
 	void Shutdown();
 
 private:

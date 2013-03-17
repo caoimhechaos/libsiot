@@ -68,6 +68,15 @@ public:
 
 	// Sets the connection to blocking or non-blocking state.
 	virtual void SetBlocking(bool blocking = true) = 0;
+
+	// Disconnects the socket and removes it from the notification queues.
+	// This should call Deregister() and then close the connection.
+	virtual void Shutdown() = 0;
+
+protected:
+	// Tell the associated server to deregister the connection. If no
+	// server connection was associated, this does nothing.
+	virtual void Deregister();
 };
 }  // namespace siot
 }  // namespace toolbox

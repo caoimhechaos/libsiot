@@ -54,6 +54,7 @@ public:
 	virtual bool IsEOF();
 	virtual uint64_t GetLastUse();
 	virtual void SetBlocking(bool blocking = true);
+	virtual void Shutdown();
 
 private:
 	int socket_;

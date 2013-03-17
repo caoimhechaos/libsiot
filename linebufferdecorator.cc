@@ -124,5 +124,11 @@ LineBufferDecorator::SetBlocking(bool blocking)
 	wrapped_->SetBlocking(blocking);
 }
 
+void
+LineBufferDecorator::Shutdown()
+{
+	wrapped_->Shutdown();
+}
+
 }  // namespace siot
 }  // namespace toolbox
