@@ -168,7 +168,6 @@ void
 Server::ListenEpoll()
 {
 	struct epoll_event ev, events[num_threads_];
-	socklen_t addrlen;
 	int error;
 
 	error = c_bind2addrinfo(serverfd_, info_);
@@ -216,6 +215,8 @@ Server::ListenEpoll()
 			{
 				ScopedPtr<struct sockaddr_storage> addr(
 						new sockaddr_storage);
+				socklen_t addrlen =
+					sizeof(struct sockaddr_storage);
 				int clientfd = accept(serverfd_,
 						(struct sockaddr*) addr.Get(),
 						&addrlen);
