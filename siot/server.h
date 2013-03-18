@@ -33,6 +33,7 @@
 #include <thread++/threadpool.h>
 #include <toolbox/scopedptr.h>
 #include <siot/connection.h>
+#include <siot/ssl.h>
 #include <string>
 #include <map>
 
@@ -40,6 +41,8 @@ namespace toolbox
 {
 namespace siot
 {
+using ssl::ServerSSLContext;
+
 // Exception for errors which occurr during setup of the server.
 class ServerSetupException : public std::exception
 {
@@ -107,6 +110,12 @@ public:
 	// established.
 	Server* SetConnectionCallback(ConnectionCallback* connected);
 
+	// Configures the server to provide SSL sessions to the clients,
+	// rather than regular TCP sessions, with the parameters outlined in
+	// the "context". This should be called before
+	// Listen(). This will take ownership of "context".
+	Server* SetServerSSLContext(ServerSSLContext* context);
+
 	// Removes the given connection from the pool of connections which
 	// are watched (i.e. we stop monitoring events and so forth).
 	void DequeueConnection(Connection* conn);
@@ -127,6 +136,7 @@ public:
 
 private:
 	ScopedPtr<ConnectionCallback> connected_;
+	ScopedPtr<ServerSSLContext> ssl_context_;
 	threadpp::ThreadPool executor_;
 	int maxconn_;
 	uint32_t num_threads_;
