@@ -4,7 +4,7 @@ check_PROGRAMS=		${TESTS}
 lib_LTLIBRARIES=	libsiot.la
 
 libsiot_la_SOURCES=	server.cc unixsocketconnection.cc	\
-			linebufferdecorator.cc
+			linebufferdecorator.cc sslcontext.cc
 libsiot_la_LDFLAGS=	-version-info ${LIBRARY_VERSION}
 libsiot_la_LIBADD=	${AC_LIBS}
 

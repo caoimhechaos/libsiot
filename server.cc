@@ -308,10 +308,11 @@ Server::ListenEpoll()
 		uint64_t tm = time(NULL);
 		if (max_idle_ > 0)
 		{
+			uint64_t max_idle = (uint64_t) max_idle_;
 			for (std::pair<int, Connection*> s : connections_)
 			{
 				Connection* conn = s.second;
-				if (tm - conn->GetLastUse() > max_idle_)
+				if (tm - conn->GetLastUse() > max_idle)
 				{
 					// Call connected_->ConnectionTerminated(conn);
 					google::protobuf::Closure* cc =
@@ -353,6 +354,13 @@ Server*
 Server::SetConnectionCallback(ConnectionCallback* connected)
 {
 	connected_.Reset(connected);
+	return this;
+}
+
+Server*
+Server::SetServerSSLContext(ServerSSLContext* context)
+{
+	ssl_context_ = context;
 	return this;
 }
 
