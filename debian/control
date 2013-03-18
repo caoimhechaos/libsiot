@@ -1,0 +1,27 @@
+Source: libsiot
+Priority: extra
+Maintainer: Caoimhe Chaos <caoimhechaos@protonmail.com>
+Build-Depends: debhelper (>= 8.0.0), autotools-dev, libtoolbox-dev, libthread++-dev
+Standards-Version: 3.9.3
+Section: libs
+Homepage: http://toolbox.ancient-solutions.com/
+Vcs-Git: http://git.ancient-solutions.com/base/libsiot.git
+Vcs-Browser: http://git.ancient-solutions.com/cgi-bin/gitweb.cgi?p=base/libsiot.git;a=summary
+
+Package: libsiot-dev
+Section: libdevel
+Architecture: any
+Depends: libsiot0 (= ${binary:Version}), libtoolbox-dev, libthread++-dev
+Description: Socket I/O Toolkit library - Development Files.
+ This is a part of the Toolbox library which provides a simplified interface to
+ serving over TCP. It attempts to use OS specific optimizations.
+ .
+ This part contains the development headers and libraries for the SIOT.
+
+Package: libsiot0
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Socket I/O Toolkit library.
+ This is a part of the Toolbox library which provides a simplified interface to
+ serving over TCP. It attempts to use OS specific optimizations.
