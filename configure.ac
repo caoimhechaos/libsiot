@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT([libsiot], [0.1.99], [tonnerre@ancient-solutions.com])
+AC_INIT([libsiot], [0.2.0], [tonnerre@ancient-solutions.com])
 AC_CONFIG_SRCDIR([server.cc])
 AC_CONFIG_HEADERS([config.h])
 
@@ -37,6 +37,7 @@ AC_DEFINE(_GLIBCXX_USE_C99, [1], [Use C99 for the glibc++ parts.])
 # Checks for libraries.
 GTEST_LIBS=""
 QT_LIBS=""
+OPENSSL="1"
 AC_CHECK_LIB([thread++], [main],
 	     [AC_LIBS="$AC_LIBS -lthread++"],
 	     [AC_ERROR(libthread++ is required)])
@@ -49,6 +50,12 @@ AC_CHECK_LIB([clib], [c_sockaddr2str],
 AC_CHECK_LIB([protobuf], [main],
 	     [AC_LIBS="$AC_LIBS -lprotobuf"],
 	     [AC_ERROR(libprotobuf is required)])
+AC_CHECK_LIB([crypto], [main],
+	     [AC_LIBS="$AC_LIBS -lcrypto"],
+	     [OPENSSL=0])
+AC_CHECK_LIB([ssl], [SSL_new],
+	     [AC_LIBS="$AC_LIBS -lssl"],
+	     [OPENSSL=0])
 AC_CHECK_LIB([gtest], [main],
 	     [GTEST_LIBS="$GTEST_LIBS -lgtest"])
 AC_CHECK_LIB([gtest_main], [main],
@@ -58,6 +65,8 @@ AC_CHECK_LIB([gmock], [main],
 AC_LIBS="$AC_LIBS"
 AC_SUBST(GTEST_LIBS)
 AC_SUBST(AC_LIBS)
+
+AC_DEFINE_UNQUOTED(USE_OPENSSL, [$OPENSSL], [Use OpenSSL for crypto.])
 
 # Checks for header files.
 AC_CHECK_HEADERS([sys/epoll.h sys/kqueue.h clib/clib.h toolbox/expvar.h \
