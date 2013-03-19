@@ -1,3 +1,9 @@
+libsiot (0.2.0-1) unstable; urgency=low
+
+  * Added support for OpenSSL sockets
+
+ -- Caoimhe Chaos <caoimhechaos@protonmail.com>  Tue, 19 Mar 2013 23:54:30 +0100
+
 libsiot (0.1-1) unstable; urgency=low
 
   * Initial release
