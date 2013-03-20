@@ -74,23 +74,19 @@ OpenSSLConnection::OpenSSLConnection(Server* srv, int socketid,
 	if ((ret = SSL_CTX_use_certificate_file(ssl_ctx_,
 				context->GetCertFilePath().c_str(),
 				SSL_FILETYPE_PEM)) <= 0)
-		throw new ServerSetupException(
-				ERR_error_string(ret, NULL));
+		throw ClientConnectionException(ERR_error_string(ret, NULL));
 
 	if ((ret = SSL_CTX_use_PrivateKey_file(ssl_ctx_,
 				context->GetPrivateKeyFilePath().c_str(),
 				SSL_FILETYPE_PEM)) <= 0)
-		throw new ServerSetupException(
-				ERR_error_string(ret, NULL));
+		throw ClientConnectionException(ERR_error_string(ret, NULL));
 
 	ssl_handle_ = SSL_new(ssl_ctx_);
 	if ((ret = SSL_set_fd(ssl_handle_, socketid)) <= 0)
-		throw new ServerSetupException(
-				ERR_error_string(ret, NULL));
+		throw ClientConnectionException(ERR_error_string(ret, NULL));
 
 	if ((ret = SSL_accept(ssl_handle_)) <= 0)
-		throw new ServerSetupException(
-				ERR_error_string(ret, NULL));
+		throw ClientConnectionException(ERR_error_string(ret, NULL));
 }
 
 OpenSSLConnection::~OpenSSLConnection()
@@ -124,8 +120,7 @@ OpenSSLConnection::Receive(size_t maxlen, int flags)
 
 	const ScopedPtr<char> buf(new char[len]);
 	if ((blen = SSL_read(ssl_handle_, buf.Get(), len)) <= 0)
-		throw new ServerSetupException(
-				ERR_error_string(blen, NULL));
+		throw ClientConnectionException(ERR_error_string(blen, NULL));
 
 	return string(buf.Get(), blen);
 }
@@ -137,8 +132,7 @@ OpenSSLConnection::Send(string data, int flags)
 	last_use_ = time(NULL);
 
 	if (ret <= 0)
-		throw new ServerSetupException(
-				ERR_error_string(ret, NULL));
+		throw ServerSetupException(ERR_error_string(ret, NULL));
 
 	return ssize_t(ret);
 }
