@@ -69,9 +69,10 @@ AC_SUBST(AC_LIBS)
 AC_DEFINE_UNQUOTED(USE_OPENSSL, [$OPENSSL], [Use OpenSSL for crypto.])
 
 # Checks for header files.
-AC_CHECK_HEADERS([sys/epoll.h sys/kqueue.h clib/clib.h toolbox/expvar.h \
-		  inttypes.h netdb.h netinet/in.h stdint.h sys/socket.h \
-		  unistd.h errno.h sys/errno.h fcntl.h])
+AC_CHECK_HEADERS([clib/clib.h errno.h fcntl.h inttypes.h memory.h	\
+		  netdb.h netinet/in.h stdint.h string.h strings.h	\
+		  sys/epoll.h sys/errno.h sys/kqueue.h sys/socket.h	\
+		  toolbox/expvar.h unistd.h])
 AC_CHECK_HEADER_STDBOOL
 
 # Checks for typedefs, structures, and compiler characteristics.
