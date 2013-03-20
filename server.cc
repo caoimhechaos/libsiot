@@ -95,13 +95,24 @@ namespace siot
 {
 using ssl::OpenSSLConnection;
 
-ServerSetupException::ServerSetupException(string errmsg) noexcept
+ServerSetupException::ServerSetupException(const string& errmsg) noexcept
 : errmsg_(errmsg)
 {
 }
 
 const char*
 ServerSetupException::what() const noexcept
+{
+	return errmsg_.c_str();
+}
+
+ClientConnectionException::ClientConnectionException(const string& errmsg) noexcept
+: errmsg_(errmsg)
+{
+}
+
+const char*
+ClientConnectionException::what() const noexcept
 {
 	return errmsg_.c_str();
 }
@@ -251,7 +262,7 @@ Server::ListenEpoll()
 				if (epoll_ctl(epollfd, EPOLL_CTL_ADD,
 							clientfd, &ev) == -1)
 				{
-					throw ServerSetupException(
+					throw ClientConnectionException(
 						"epoll_ctl: " +
 						string(strerror(errno)));
 				}
@@ -285,7 +296,7 @@ Server::ListenEpoll()
 								NULL) == -1
 							&& errno != EBADFD)
 					{
-						throw ServerSetupException(
+						throw ClientConnectionException(
 								"epoll_ctl: " +
 								string(strerror(errno)));
 					}
@@ -336,7 +347,7 @@ Server::ListenEpoll()
 								s.first, NULL)
 							== -1)
 					{
-						throw ServerSetupException(
+						throw ClientConnectionException(
 								"epoll_ctl: " +
 								string(strerror(errno)));
 					}

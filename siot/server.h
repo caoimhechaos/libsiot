@@ -48,13 +48,28 @@ class ServerSetupException : public std::exception
 {
 public:
 	// Creates a new exception with the given error message.
-	ServerSetupException(std::string errmsg) noexcept;
+	ServerSetupException(const std::string& errmsg) noexcept;
 
 	// Retrieves the error message from the exception.
 	virtual const char* what() const noexcept;
 
 private:
-	std::string errmsg_;
+	const std::string errmsg_;
+};
+
+// Exception for errors which occurr during client connections. These
+// simply mean the client connection has failed or is having problems.
+class ClientConnectionException : public std::exception
+{
+public:
+	// Creates a new exception with the given error message.
+	ClientConnectionException(const std::string& errmsg) noexcept;
+
+	// Retrieves the error message from the exception.
+	virtual const char* what() const noexcept;
+
+private:
+	const std::string errmsg_;
 };
 
 // Prototype of a class to notify when new connections have been established.
