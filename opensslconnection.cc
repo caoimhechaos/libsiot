@@ -65,7 +65,6 @@ OpenSSLConnection::OpenSSLConnection(Server* srv, int socketid,
 	openssl_cfg_(QSingleton<OpenSSLConfig>::GetInstance()),
 	blocking_(true), last_use_(time(NULL))
 {
-	ScopedPtr<ServerSSLContext> ctx_deleter_(context);
 	const SSL_METHOD* meth = SSLv23_server_method();
 	int ret;
 

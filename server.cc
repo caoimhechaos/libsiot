@@ -82,6 +82,7 @@
 
 #ifdef _POSIX_SOURCE
 #include "unixsocketconnection.h"
+#include "opensslconnection.h"
 #endif /* _POSIX_SOURCE */
 
 #ifndef HAVE_STRERROR
@@ -92,6 +93,8 @@ namespace toolbox
 {
 namespace siot
 {
+using ssl::OpenSSLConnection;
+
 ServerSetupException::ServerSetupException(string errmsg) noexcept
 : errmsg_(errmsg)
 {
@@ -227,9 +230,16 @@ Server::ListenEpoll()
 					continue;
 				}
 
-				Connection* conn = new UNIXSocketConnection(
-						this, clientfd,
-						addr.Release());
+				Connection* conn;
+				if (ssl_context_.IsNull())
+					conn = new UNIXSocketConnection(
+							this, clientfd,
+							addr.Release());
+				else
+					conn = new OpenSSLConnection(
+							this, clientfd,
+							addr.Release(),
+							ssl_context_.Get());
 				connections_[clientfd] = conn;
 				memset(events, 0, num_threads_ *
 						sizeof(struct epoll_event));
