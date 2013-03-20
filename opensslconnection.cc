@@ -60,7 +60,8 @@ OpenSSLConfig::OpenSSLConfig()
 }
 
 OpenSSLConnection::OpenSSLConnection(Server* srv, int socketid,                            
-		struct sockaddr_storage* peer, ServerSSLContext* context)
+		struct sockaddr_storage* peer,
+		const ServerSSLContext* context)
 : UNIXSocketConnection(srv, socketid, peer),
 	openssl_cfg_(QSingleton<OpenSSLConfig>::GetInstance()),
 	blocking_(true), last_use_(time(NULL))

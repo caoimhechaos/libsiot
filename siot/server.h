@@ -114,7 +114,7 @@ public:
 	// rather than regular TCP sessions, with the parameters outlined in
 	// the "context". This should be called before
 	// Listen(). This will take ownership of "context".
-	Server* SetServerSSLContext(ServerSSLContext* context);
+	Server* SetServerSSLContext(const ServerSSLContext* context);
 
 	// Removes the given connection from the pool of connections which
 	// are watched (i.e. we stop monitoring events and so forth).
@@ -136,7 +136,7 @@ public:
 
 private:
 	ScopedPtr<ConnectionCallback> connected_;
-	ScopedPtr<ServerSSLContext> ssl_context_;
+	const ServerSSLContext* ssl_context_;
 	threadpp::ThreadPool executor_;
 	int maxconn_;
 	uint32_t num_threads_;

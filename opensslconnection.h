@@ -58,7 +58,7 @@ public:
 	// the settings specified in "context".
 	OpenSSLConnection(Server* srv, int socketid,
 		       	struct sockaddr_storage* peer,
-		       	ServerSSLContext* context);
+			const ServerSSLContext* context);
 	virtual ~OpenSSLConnection();
 
 	// Implements Connection.
