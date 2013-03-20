@@ -42,7 +42,7 @@ public:
 		if (err <= 0)
 		{
 			std::cerr << ERR_error_string(err, NULL) << std::endl;
-			throw ServerSetupException(
+			throw ClientConnectionException(
 					ERR_error_string(err, NULL));
 		}
 	}
