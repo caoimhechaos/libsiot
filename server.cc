@@ -360,7 +360,7 @@ Server::SetConnectionCallback(ConnectionCallback* connected)
 Server*
 Server::SetServerSSLContext(ServerSSLContext* context)
 {
-	ssl_context_ = context;
+	ssl_context_.Reset(context);
 	return this;
 }
 
