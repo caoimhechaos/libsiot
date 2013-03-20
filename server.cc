@@ -231,15 +231,15 @@ Server::ListenEpoll()
 				}
 
 				Connection* conn;
-				if (ssl_context_.IsNull())
-					conn = new UNIXSocketConnection(
-							this, clientfd,
-							addr.Release());
-				else
+				if (ssl_context_)
 					conn = new OpenSSLConnection(
 							this, clientfd,
 							addr.Release(),
-							ssl_context_.Get());
+							ssl_context_);
+				else
+					conn = new UNIXSocketConnection(
+							this, clientfd,
+							addr.Release());
 				connections_[clientfd] = conn;
 				memset(events, 0, num_threads_ *
 						sizeof(struct epoll_event));
@@ -368,9 +368,9 @@ Server::SetConnectionCallback(ConnectionCallback* connected)
 }
 
 Server*
-Server::SetServerSSLContext(ServerSSLContext* context)
+Server::SetServerSSLContext(const ServerSSLContext* context)
 {
-	ssl_context_.Reset(context);
+	ssl_context_ = context;
 	return this;
 }
 
