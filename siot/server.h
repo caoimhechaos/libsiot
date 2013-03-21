@@ -63,12 +63,17 @@ class ClientConnectionException : public std::exception
 {
 public:
 	// Creates a new exception with the given error message.
-	ClientConnectionException(const std::string& errmsg) noexcept;
+	ClientConnectionException(const std::string& identifier,
+			const std::string& errmsg) noexcept;
 
 	// Retrieves the error message from the exception.
 	virtual const char* what() const noexcept;
 
+	// Retrieves the short identifier of the message.
+	virtual string identifier() const noexcept;
+
 private:
+	const std::string identifier_;
 	const std::string errmsg_;
 };
 
