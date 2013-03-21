@@ -78,6 +78,8 @@
 #include <sys/epoll.h>
 #endif /* HAVE_SYS_EPOLL_H */
 
+#include <toolbox/expvar.h>
+
 #include "siot/server.h"
 
 #ifdef _POSIX_SOURCE
@@ -94,6 +96,13 @@ namespace toolbox
 namespace siot
 {
 using ssl::OpenSSLConnection;
+static ExpMap<int64_t> client_connection_errors("client-connection-errors");
+#ifdef _POSIX_SOURCE
+static ExpMap<int64_t> accept_errors("accept-errors");
+#ifdef HAVE_EPOLL_CREATE
+static ExpMap<int64_t> epoll_errors("siot-epoll-errors");
+#endif /* HAVE_EPOLL_CREATE */
+#endif /* _POSIX_SOURCE */
 
 ServerSetupException::ServerSetupException(const string& errmsg) noexcept
 : errmsg_(errmsg)
@@ -106,8 +115,9 @@ ServerSetupException::what() const noexcept
 	return errmsg_.c_str();
 }
 
-ClientConnectionException::ClientConnectionException(const string& errmsg) noexcept
-: errmsg_(errmsg)
+ClientConnectionException::ClientConnectionException(
+		const std::string& identifier, const string& errmsg) noexcept
+: identifier_(identifier), errmsg_(errmsg)
 {
 }
 
@@ -117,10 +127,17 @@ ClientConnectionException::what() const noexcept
 	return errmsg_.c_str();
 }
 
+string
+ClientConnectionException::identifier() const noexcept
+{
+	return identifier_;
+}
+
 Server::Server(string addr, ConnectionCallback* connected,
 		uint32_t num_threads)
-: connected_(connected), executor_(num_threads), maxconn_(num_threads),
-	num_threads_(num_threads), max_idle_(-1), running_(true)
+: connected_(connected), ssl_context_(0), executor_(num_threads),
+	maxconn_(num_threads), num_threads_(num_threads), max_idle_(-1),
+	running_(true)
 {
 #ifdef _POSIX_SOURCE
 	int error = c_str2addrinfo(addr.c_str(), &info_);
@@ -227,6 +244,9 @@ Server::ListenEpoll()
 		{
 			if (events[n].data.fd == serverfd_)
 			{
+				// A connection is waiting on the server
+				// socket. We just accept it and wait for
+				// data on it.
 				ScopedPtr<struct sockaddr_storage> addr(
 						new sockaddr_storage);
 				socklen_t addrlen =
@@ -236,21 +256,45 @@ Server::ListenEpoll()
 						&addrlen);
 				if (clientfd == -1)
 				{
-					connected_->ConnectionFailed(string(
-								strerror(errno)));
+					string errmsg =
+						string(strerror(errno));
+					connected_->ConnectionFailed(errmsg);
+					accept_errors.Add(errmsg, 1);
 					continue;
 				}
 
 				Connection* conn;
 				if (ssl_context_)
-					conn = new OpenSSLConnection(
-							this, clientfd,
-							addr.Release(),
-							ssl_context_);
+				{
+					try
+					{
+						conn = new OpenSSLConnection(
+								this, clientfd,
+								addr.Release(),
+								ssl_context_);
+					}
+					catch (ClientConnectionException e)
+					{
+						client_connection_errors.Add(
+								e.identifier(),
+								1);
+					}
+				}
 				else
-					conn = new UNIXSocketConnection(
-							this, clientfd,
-							addr.Release());
+				{
+					try
+					{
+						conn = new UNIXSocketConnection(
+								this, clientfd,
+								addr.Release());
+					}
+					catch (ClientConnectionException e)
+					{
+						client_connection_errors.Add(
+								e.identifier(),
+								1);
+					}
+				}
 				connections_[clientfd] = conn;
 				memset(events, 0, num_threads_ *
 						sizeof(struct epoll_event));
@@ -262,9 +306,13 @@ Server::ListenEpoll()
 				if (epoll_ctl(epollfd, EPOLL_CTL_ADD,
 							clientfd, &ev) == -1)
 				{
-					throw ClientConnectionException(
-						"epoll_ctl: " +
-						string(strerror(errno)));
+					string errmsg =
+						string(strerror(errno));
+					connected_->ConnectionFailed(
+								"epoll_ctl: " +
+								errmsg);
+					epoll_errors.Add(errmsg, 1);
+					continue;
 				}
 
 				// Run connected_->ConnectionEstablished(conn)
@@ -296,9 +344,13 @@ Server::ListenEpoll()
 								NULL) == -1
 							&& errno != EBADFD)
 					{
-						throw ClientConnectionException(
+						string errmsg =
+							string(strerror(errno));
+						connected_->ConnectionFailed(
 								"epoll_ctl: " +
-								string(strerror(errno)));
+								errmsg);
+						epoll_errors.Add(errmsg, 1);
+						continue;
 					}
 
 					delete conn;
@@ -347,9 +399,13 @@ Server::ListenEpoll()
 								s.first, NULL)
 							== -1)
 					{
-						throw ClientConnectionException(
+						string errmsg =
+							string(strerror(errno));
+						connected_->ConnectionFailed(
 								"epoll_ctl: " +
-								string(strerror(errno)));
+								errmsg);
+						epoll_errors.Add(errmsg, 1);
+						continue;
 					}
 
 					connections_.erase(s.first);
