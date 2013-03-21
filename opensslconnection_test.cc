@@ -42,7 +42,8 @@ public:
 		if (err <= 0)
 		{
 			std::cerr << ERR_error_string(err, NULL) << std::endl;
-			throw ClientConnectionException(
+			throw ClientConnectionException("SSL_connect:" +
+					std::to_string(err),
 					ERR_error_string(err, NULL));
 		}
 	}
