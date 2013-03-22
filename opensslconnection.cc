@@ -40,8 +40,6 @@
 #include <toolbox/qsingleton.h>
 #include <toolbox/scopedptr.h>
 
-#include <iostream>
-
 #include "opensslconnection.h"
 
 namespace toolbox
@@ -86,6 +84,14 @@ OpenSSLConnection::OpenSSLConnection(Server* srv, int socketid,
 				ERR_error_string(ret, NULL));
 
 	ssl_handle_ = SSL_new(ssl_ctx_);
+	if (!ssl_handle_)
+	{
+		ret = ERR_get_error();
+		throw ClientConnectionException("SSL_set_fd:"
+				+ std::to_string(ret),
+				ERR_error_string(ret, NULL));
+	}
+
 	if ((ret = SSL_set_fd(ssl_handle_, socketid)) <= 0)
 		throw ClientConnectionException("SSL_set_fd:"
 				+ std::to_string(ret),
@@ -130,7 +136,8 @@ OpenSSLConnection::Receive(size_t maxlen, int flags)
 	if ((blen = SSL_read(ssl_handle_, buf.Get(), len)) <= 0)
 		throw ClientConnectionException("SSL_read:"
 				+ std::to_string(blen),
-				ERR_error_string(blen, NULL));
+				ERR_error_string(SSL_get_error(
+						ssl_handle_, blen), NULL));
 
 	return string(buf.Get(), blen);
 }
