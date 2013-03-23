@@ -74,6 +74,7 @@ private:
 	uint64_t last_use_;
 	SSL_CTX* ssl_ctx_;
 	SSL* ssl_handle_;
+	std::mutex ssl_mtx_;
 };
 }  // namespace ssl
 }  // namespace siot
