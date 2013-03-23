@@ -111,6 +111,7 @@ OpenSSLConnection::~OpenSSLConnection()
 void
 OpenSSLConnection::Shutdown()
 {
+	std::unique_lock<std::mutex> l(ssl_mtx_);
 	int is_down = SSL_get_shutdown(ssl_handle_);
 	if (is_down >= 0)
 		SSL_shutdown(ssl_handle_);
@@ -121,6 +122,7 @@ OpenSSLConnection::Shutdown()
 string
 OpenSSLConnection::Receive(size_t maxlen, int flags)
 {
+	std::unique_lock<std::mutex> l(ssl_mtx_);
 	size_t len = SSL_pending(ssl_handle_);
 	int blen;
 	last_use_ = time(NULL);
@@ -134,10 +136,12 @@ OpenSSLConnection::Receive(size_t maxlen, int flags)
 
 	const ScopedPtr<char> buf(new char[len]);
 	if ((blen = SSL_read(ssl_handle_, buf.Get(), len)) <= 0)
+	{
+		unsigned long errv = SSL_get_error(ssl_handle_, blen);
 		throw ClientConnectionException("SSL_read:"
 				+ std::to_string(blen),
-				ERR_error_string(SSL_get_error(
-						ssl_handle_, blen), NULL));
+				ERR_error_string(errv, NULL));
+	}
 
 	return string(buf.Get(), blen);
 }
@@ -145,6 +149,7 @@ OpenSSLConnection::Receive(size_t maxlen, int flags)
 ssize_t
 OpenSSLConnection::Send(string data, int flags)
 {
+	std::unique_lock<std::mutex> l(ssl_mtx_);
 	int ret = SSL_write(ssl_handle_, data.data(), data.size());
 	last_use_ = time(NULL);
 
