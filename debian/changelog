@@ -1,3 +1,10 @@
+libsiot (0.2.2-1) unstable; urgency=low
+
+  * Serialized access to the connection handle
+  * Improved error handling
+
+ -- Caoimhe Chaos <caoimhechaos@protonmail.com>  Sun, 24 Mar 2013 02:54:55 +0100
+
 libsiot (0.2.1-1) unstable; urgency=low
 
   * Use different exceptions for setup and client problems
