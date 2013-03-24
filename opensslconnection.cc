@@ -138,8 +138,12 @@ OpenSSLConnection::Receive(size_t maxlen, int flags)
 	if ((blen = SSL_read(ssl_handle_, buf.Get(), len)) <= 0)
 	{
 		unsigned long errv = SSL_get_error(ssl_handle_, blen);
+		if (errv == SSL_ERROR_SYSCALL)
+			throw ClientConnectionException("SSL_read:"
+					+ string(strerror(errno)),
+					strerror(errno));
 		throw ClientConnectionException("SSL_read:"
-				+ std::to_string(blen),
+				+ std::to_string(errv),
 				ERR_error_string(errv, NULL));
 	}
 
@@ -154,9 +158,16 @@ OpenSSLConnection::Send(string data, int flags)
 	last_use_ = time(NULL);
 
 	if (ret <= 0)
+	{
+		unsigned long errv = SSL_get_error(ssl_handle_, ret);
+		if (errv == SSL_ERROR_SYSCALL)
+			throw ClientConnectionException("SSL_read:"
+					+ string(strerror(errno)),
+					strerror(errno));
 		throw ClientConnectionException("SSL_write:"
-				+ std::to_string(ret),
-				ERR_error_string(ret, NULL));
+				+ std::to_string(errv),
+				ERR_error_string(errv, NULL));
+	}
 
 	return ssize_t(ret);
 }
