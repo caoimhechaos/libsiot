@@ -295,7 +295,8 @@ Server::ListenEpoll()
 								1);
 					}
 				}
-				connections_[clientfd] = conn;
+				connections_[clientfd] =
+					connected_->AddDecorators(conn);
 				memset(events, 0, num_threads_ *
 						sizeof(struct epoll_event));
 
@@ -471,6 +472,12 @@ Connection::Deregister()
 
 ConnectionCallback::~ConnectionCallback()
 {
+}
+
+Connection*
+ConnectionCallback::AddDecorators(Connection* in)
+{
+	return in;
 }
 
 void
