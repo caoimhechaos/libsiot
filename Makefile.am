@@ -1,12 +1,14 @@
 TESTS=			unixsocketconnection_test server_test	\
 			linebufferdecorator_test		\
-			opensslconnection_test
+			opensslconnection_test			\
+			acknowledgementdecorator_test
 check_PROGRAMS=		${TESTS}
 noinst_HEADERS=		opensslconnection.h unixsocketconnection.h
 lib_LTLIBRARIES=	libsiot.la
 
 libsiot_la_SOURCES=	server.cc unixsocketconnection.cc	\
 			linebufferdecorator.cc sslcontext.cc	\
+			acknowledgementdecorator.cc		\
 			opensslconnection.cc
 libsiot_la_LDFLAGS=	-version-info ${LIBRARY_VERSION}
 libsiot_la_LIBADD=	${AC_LIBS}
