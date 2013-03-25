@@ -84,6 +84,19 @@ class ConnectionCallback
 public:
 	virtual ~ConnectionCallback();
 
+	// This allows the service to wrap the connection object into
+	// something it can use better, e.g. the LineBufferDecorator. This
+	// method should return a connection handle of the type which the
+	// service ultimately intends to use. The default is to just return
+	// the origial object, which works just as well.
+	//
+	// Unlike ConnectionEstablished(), this method is called in the same
+	// thread which accepts new connections and will thus block. If you
+	// watn to do some extensive processing or anything like it, you
+	// should run that in ConnectionEstablished(), which is called in
+	// a thread of its own.
+	virtual Connection* AddDecorators(Connection* in);
+
 	// This method is invoked when a new connection "conn" has been made
 	// to the server. The class should take ownership of the connection
 	// object.
