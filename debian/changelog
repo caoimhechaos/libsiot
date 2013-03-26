@@ -1,3 +1,12 @@
+libsiot (0.2.3-1) unstable; urgency=low
+
+  * Added a way to wrap connections in decorators before they're used in the
+    server
+  * Added a decorator which requires to ack data before it stops being
+    returned by Receive().
+
+ -- Caoimhe Chaos <caoimhechaos@protonmail.com>  Tue, 26 Mar 2013 01:28:32 +0100
+
 libsiot (0.2.2-1) unstable; urgency=low
 
   * Serialized access to the connection handle
