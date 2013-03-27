@@ -237,8 +237,21 @@ Server::ListenEpoll()
 		int nfds = epoll_wait(epollfd, events, num_threads_,
 				max_idle_ < 0 ? -1 : max_idle_ * 1000);
 		if (nfds == -1)
-			throw ServerSetupException("epoll_wait: " +
-					string(strerror(errno)));
+		{
+			string errmsg =
+				string(strerror(errno));
+			connected_->ConnectionFailed(errmsg);
+
+			if (errno == ERESTART || errno == EINTR ||
+				       	errno == EAGAIN)
+			{
+				epoll_errors.Add(errmsg, 1);
+				continue;
+			}
+			else
+				throw ServerSetupException("epoll_wait: " +
+						errmsg);
+		}
 
 		for (int n = 0; n < nfds; ++n)
 		{
