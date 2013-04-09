@@ -37,6 +37,7 @@
 #endif /* HAVE_SYS_SOCKET_H */
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <thread++/mutex.h>
 #include <toolbox/qsingleton.h>
 #include <toolbox/scopedptr.h>
 
@@ -48,6 +49,9 @@ namespace siot
 {
 namespace ssl
 {
+using threadpp::Mutex;
+using threadpp::MutexLock;
+
 OpenSSLConfig::OpenSSLConfig()
 {
 	CRYPTO_malloc_init();
@@ -62,7 +66,7 @@ OpenSSLConnection::OpenSSLConnection(Server* srv, int socketid,
 		const ServerSSLContext* context)
 : UNIXSocketConnection(srv, socketid, peer),
 	openssl_cfg_(QSingleton<OpenSSLConfig>::GetInstance()),
-	blocking_(true), last_use_(time(NULL))
+	blocking_(true), last_use_(time(NULL)), ssl_mtx_(Mutex::Create())
 {
 	const SSL_METHOD* meth = SSLv23_server_method();
 	int ret;
@@ -111,7 +115,7 @@ OpenSSLConnection::~OpenSSLConnection()
 void
 OpenSSLConnection::Shutdown()
 {
-	std::unique_lock<std::mutex> l(ssl_mtx_);
+	MutexLock l(ssl_mtx_);
 	int is_down = SSL_get_shutdown(ssl_handle_);
 	if (is_down >= 0)
 		SSL_shutdown(ssl_handle_);
@@ -122,7 +126,7 @@ OpenSSLConnection::Shutdown()
 string
 OpenSSLConnection::Receive(size_t maxlen, int flags)
 {
-	std::unique_lock<std::mutex> l(ssl_mtx_);
+	MutexLock l(ssl_mtx_);
 	size_t len = SSL_pending(ssl_handle_);
 	int blen;
 	last_use_ = time(NULL);
@@ -153,7 +157,7 @@ OpenSSLConnection::Receive(size_t maxlen, int flags)
 ssize_t
 OpenSSLConnection::Send(string data, int flags)
 {
-	std::unique_lock<std::mutex> l(ssl_mtx_);
+	MutexLock l(ssl_mtx_);
 	int ret = SSL_write(ssl_handle_, data.data(), data.size());
 	last_use_ = time(NULL);
 

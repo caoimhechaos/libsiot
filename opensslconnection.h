@@ -31,6 +31,8 @@
 
 #include <openssl/ssl.h>
 
+#include <thread++/mutex.h>
+
 #include "siot/server.h"
 #include "siot/ssl.h"
 #include "unixsocketconnection.h"
@@ -74,7 +76,7 @@ private:
 	uint64_t last_use_;
 	SSL_CTX* ssl_ctx_;
 	SSL* ssl_handle_;
-	std::mutex ssl_mtx_;
+	threadpp::Mutex* ssl_mtx_;
 };
 }  // namespace ssl
 }  // namespace siot
