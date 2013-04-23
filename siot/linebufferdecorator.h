@@ -73,6 +73,7 @@ public:
 	virtual uint64_t GetLastUse();
 	virtual void SetBlocking(bool blocking = true);
 	virtual void Shutdown();
+	virtual bool IsShutdown();
 
 private:
 	Connection* wrapped_;
