@@ -130,5 +130,11 @@ LineBufferDecorator::Shutdown()
 	wrapped_->Shutdown();
 }
 
+bool
+LineBufferDecorator::IsShutdown()
+{
+	return wrapped_->IsShutdown();
+}
+
 }  // namespace siot
 }  // namespace toolbox
