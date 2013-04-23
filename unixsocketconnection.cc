@@ -78,7 +78,6 @@ UNIXSocketConnection::UNIXSocketConnection(Server* srv, int socketid,
 
 UNIXSocketConnection::~UNIXSocketConnection()
 {
-	Shutdown();
 }
 
 string
@@ -156,6 +155,7 @@ UNIXSocketConnection::Shutdown()
 	Deregister();
 	shutdown(socket_, SHUT_RDWR);
 	close(socket_);
+	delete this;
 }
 
 }  // namespace siot

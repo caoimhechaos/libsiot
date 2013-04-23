@@ -109,18 +109,19 @@ OpenSSLConnection::OpenSSLConnection(Server* srv, int socketid,
 
 OpenSSLConnection::~OpenSSLConnection()
 {
-	Shutdown();
 }
 
 void
 OpenSSLConnection::Shutdown()
 {
 	MutexLock l(ssl_mtx_);
+	Deregister();
 	int is_down = SSL_get_shutdown(ssl_handle_);
 	if (is_down >= 0)
 		SSL_shutdown(ssl_handle_);
 	SSL_free(ssl_handle_);
 	SSL_CTX_free(ssl_ctx_);
+	delete this;
 }
 
 string

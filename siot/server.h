@@ -30,8 +30,11 @@
 #ifndef INCLUDED_SIOT_SERVER_H
 #define INCLUDED_SIOT_SERVER_H 1
 
+#include <google/protobuf/stubs/common.h>
+#include <thread++/mutex.h>
 #include <thread++/threadpool.h>
 #include <toolbox/scopedptr.h>
+#include <condition_variable>
 #include <siot/connection.h>
 #include <siot/ssl.h>
 #include <string>
@@ -41,7 +44,9 @@ namespace toolbox
 {
 namespace siot
 {
+using google::protobuf::Closure;
 using ssl::ServerSSLContext;
+using threadpp::ReadWriteMutex;
 
 // Exception for errors which occurr during setup of the server.
 class ServerSetupException : public std::exception
@@ -179,8 +184,13 @@ private:
 #ifdef _POSIX_SOURCE
 	struct addrinfo *info_;
 	int serverfd_;
+	int epollfd_;
 
 	std::map<int, Connection*> connections_;
+	ScopedPtr<ReadWriteMutex> connections_lock_;
+	std::condition_variable connections_updated_;
+	void LockCallAndUnlock(Closure* c);
+
 	void ListenPoll();
 #ifdef HAVE_SELECT
 	void ListenSelect();
@@ -192,6 +202,7 @@ private:
 
 #ifdef HAVE_EPOLL_CREATE
 	void ListenEpoll();
+	void ReapConnectionsEpoll();
 #endif /* HAVE_EPOLL_CREATE */
 #endif /* _POSIX_SOURCE */
 };
