@@ -79,6 +79,7 @@
 #endif /* HAVE_SYS_EPOLL_H */
 
 #include <toolbox/expvar.h>
+#include <thread++/mutex.h>
 
 #include "siot/server.h"
 
@@ -96,6 +97,9 @@ namespace toolbox
 namespace siot
 {
 using ssl::OpenSSLConnection;
+using threadpp::MutexLock;
+using threadpp::ReadMutexLock;
+
 static ExpMap<int64_t> client_connection_errors("client-connection-errors");
 #ifdef _POSIX_SOURCE
 static ExpMap<int64_t> accept_errors("accept-errors");
@@ -135,9 +139,12 @@ ClientConnectionException::identifier() const noexcept
 
 Server::Server(string addr, ConnectionCallback* connected,
 		uint32_t num_threads)
-: connected_(connected), ssl_context_(0), executor_(num_threads),
+: connected_(connected), ssl_context_(0), executor_(num_threads + 1),
 	maxconn_(num_threads), num_threads_(num_threads), max_idle_(-1),
 	running_(true)
+#ifdef _POSIX_SOURCE
+	 , connections_lock_(ReadWriteMutex::Create())
+#endif /* _POSIX_SOURCE */
 {
 #ifdef _POSIX_SOURCE
 	int error = c_str2addrinfo(addr.c_str(), &info_);
@@ -201,6 +208,10 @@ Server::ListenEpoll()
 	struct epoll_event ev, events[num_threads_];
 	int error;
 
+	executor_.Add(google::protobuf::NewCallback(
+				this,
+				&Server::ReapConnectionsEpoll));
+
 	error = c_bind2addrinfo(serverfd_, info_);
 	if (error)
 	{
@@ -213,8 +224,8 @@ Server::ListenEpoll()
 	if (listen(serverfd_, maxconn_))
 		throw ServerSetupException(strerror(errno));
 
-	int epollfd = epoll_create(num_threads_);
-	if (epollfd == -1)
+	epollfd_ = epoll_create(num_threads_);
+	if (epollfd_ == -1)
 	{
 		std::stringstream ss;
 		ss << num_threads_;
@@ -226,7 +237,7 @@ Server::ListenEpoll()
 	ev.events = EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLHUP;
 	ev.data.fd = serverfd_;
 
-	if (epoll_ctl(epollfd, EPOLL_CTL_ADD, serverfd_, &ev) == -1)
+	if (epoll_ctl(epollfd_, EPOLL_CTL_ADD, serverfd_, &ev) == -1)
 		throw ServerSetupException("epoll_ctl: " +
 				string(strerror(errno)));
 
@@ -234,7 +245,7 @@ Server::ListenEpoll()
 
 	while (running_)
 	{
-		int nfds = epoll_wait(epollfd, events, num_threads_,
+		int nfds = epoll_wait(epollfd_, events, num_threads_,
 				max_idle_ < 0 ? -1 : max_idle_ * 1000);
 		if (nfds == -1)
 		{
@@ -308,8 +319,10 @@ Server::ListenEpoll()
 								1);
 					}
 				}
+				connections_lock_->Lock();
 				connections_[clientfd] =
 					connected_->AddDecorators(conn);
+				connections_lock_->Unlock();
 				memset(events, 0, num_threads_ *
 						sizeof(struct epoll_event));
 
@@ -317,7 +330,7 @@ Server::ListenEpoll()
 					EPOLLHUP | EPOLLET;
 				ev.data.fd = clientfd;
 
-				if (epoll_ctl(epollfd, EPOLL_CTL_ADD,
+				if (epoll_ctl(epollfd_, EPOLL_CTL_ADD,
 							clientfd, &ev) == -1)
 				{
 					string errmsg =
@@ -335,7 +348,10 @@ Server::ListenEpoll()
 							connected_.Get(),
 							&ConnectionCallback::ConnectionEstablished,
 							conn);
-				executor_.Add(cc);
+				executor_.Add(google::protobuf::NewCallback(
+							this,
+							&Server::LockCallAndUnlock,
+							cc));
 			}
 			else if (events[n].data.fd > 0)
 			{
@@ -350,24 +366,11 @@ Server::ListenEpoll()
 							connected_.Get(),
 							&ConnectionCallback::ConnectionTerminated,
 							conn);
-					executor_.Add(cc);
-					connections_.erase(events[n].data.fd);
-
-					if (epoll_ctl(epollfd, EPOLL_CTL_DEL,
-								events[n].data.fd,
-								NULL) == -1
-							&& errno != EBADFD)
-					{
-						string errmsg =
-							string(strerror(errno));
-						connected_->ConnectionFailed(
-								"epoll_ctl: " +
-								errmsg);
-						epoll_errors.Add(errmsg, 1);
-						continue;
-					}
-
-					delete conn;
+					executor_.Add(google::protobuf::NewCallback(
+								this,
+								&Server::LockCallAndUnlock,
+								cc));
+					conn->Shutdown();
 				}
 				else if (conn && (events[n].events & EPOLLERR))
 				{
@@ -377,7 +380,10 @@ Server::ListenEpoll()
 							connected_.Get(),
 							&ConnectionCallback::Error,
 							conn);
-					executor_.Add(cc);
+					executor_.Add(google::protobuf::NewCallback(
+								this,
+								&Server::LockCallAndUnlock,
+								cc));
 				}
 				else if (conn && (events[n].events & EPOLLIN))
 				{
@@ -387,43 +393,10 @@ Server::ListenEpoll()
 							connected_.Get(),
 							&ConnectionCallback::DataReady,
 							conn);
-					executor_.Add(cc);
-				}
-			}
-		}
-
-		uint64_t tm = time(NULL);
-		if (max_idle_ > 0)
-		{
-			uint64_t max_idle = (uint64_t) max_idle_;
-			for (std::pair<int, Connection*> s : connections_)
-			{
-				Connection* conn = s.second;
-				if (tm - conn->GetLastUse() > max_idle)
-				{
-					// Call connected_->ConnectionTerminated(conn);
-					google::protobuf::Closure* cc =
-						google::protobuf::NewCallback(
-								connected_.Get(),
-								&ConnectionCallback::ConnectionTerminated,
-								conn);
-					executor_.Add(cc);
-
-					if (epoll_ctl(epollfd, EPOLL_CTL_DEL,
-								s.first, NULL)
-							== -1)
-					{
-						string errmsg =
-							string(strerror(errno));
-						connected_->ConnectionFailed(
-								"epoll_ctl: " +
-								errmsg);
-						epoll_errors.Add(errmsg, 1);
-						continue;
-					}
-
-					connections_.erase(s.first);
-					delete conn;
+					executor_.Add(google::protobuf::NewCallback(
+								this,
+								&Server::LockCallAndUnlock,
+								cc));
 				}
 			}
 		}
@@ -431,7 +404,66 @@ Server::ListenEpoll()
 		memset(events, 0, num_threads_ * sizeof(struct epoll_event));
 	}
 }
+
+void
+Server::ReapConnectionsEpoll()
+{
+	// TODO(tonnerre): Lock the same lock as above.
+	std::mutex m;
+	const uint64_t max_idle = (uint64_t) max_idle_;
+
+	while (running_)
+	{
+		std::unique_lock<std::mutex> l(m);
+
+		connections_updated_.wait_for(l,
+				std::chrono::milliseconds(max_idle_ > 2 ?
+					max_idle_ * 500 : 500));
+
+		if (!running_)
+			break;
+
+		MutexLock lk(connections_lock_.Get());
+		const uint64_t tm = time(NULL);
+
+		for (std::pair<int, Connection*> s : connections_)
+		{
+			Connection* conn = s.second;
+
+			if (conn->IsShutdown() ||
+					(max_idle_ > 0 &&
+					 tm - conn->GetLastUse() > max_idle))
+			{
+				connections_.erase(s.first);
+
+				if (epoll_ctl(epollfd_, EPOLL_CTL_DEL,
+							s.first, NULL) == -1)
+				{
+					string errmsg =
+						string(strerror(errno));
+					connected_->ConnectionFailed(
+							"epoll_ctl: " +
+							errmsg);
+					epoll_errors.Add(errmsg, 1);
+				}
+
+				if (!conn->IsShutdown())
+				{
+					conn->Shutdown();
+					connected_->ConnectionTerminated(conn);
+				}
+			}
+		}
+	}
+}
 #endif /* HAVE_EPOLL_CREATE */
+
+void
+Server::LockCallAndUnlock(Closure* c)
+{
+	ReadMutexLock l(connections_lock_.Get());
+	c->Run();
+}
 #endif /* _POSIX_SOURCE */
 
 Server*
@@ -461,7 +493,22 @@ Server::DequeueConnection(Connection* conn)
 	for (std::pair<int, Connection*> it : connections_)
 	{
 		if (it.second == conn)
+		{
+			MutexLock l(connections_lock_.Get());
 			connections_.erase(it.first);
+
+			if (epoll_ctl(epollfd_, EPOLL_CTL_DEL, it.first, NULL)
+					== -1 && errno != EBADFD)
+			{
+				string errmsg =
+					string(strerror(errno));
+				connected_->ConnectionFailed(
+						"epoll_ctl: " + errmsg);
+				epoll_errors.Add(errmsg, 1);
+			}
+
+			connections_updated_.notify_one();
+		}
 	}
 }
 
@@ -471,16 +518,34 @@ Server::SetMaxIdle(int max_idle)
 	max_idle_ = max_idle;
 }
 
+Connection::Connection()
+: is_shutdown_(false)
+{
+}
+
 Connection::~Connection()
 {
+}
+
+void
+Connection::Shutdown()
+{
+	Deregister();
 }
 
 void
 Connection::Deregister()
 {
 	Server* srv = this->GetServer();
+	is_shutdown_ = true;
 	if (srv)
 		srv->DequeueConnection(this);
+}
+
+bool
+Connection::IsShutdown()
+{
+	return is_shutdown_;
 }
 
 ConnectionCallback::~ConnectionCallback()

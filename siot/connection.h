@@ -43,7 +43,11 @@ class Server;
 class Connection
 {
 public:
-	// Close the connection.
+	// Some standard initializations for new connections.
+	Connection();
+
+	// Close the connection. Users of this object should always call
+	// Shutdown() instead.
 	virtual ~Connection();
 
 	// Read up to maxlen bytes from the connection.
@@ -71,12 +75,19 @@ public:
 
 	// Disconnects the socket and removes it from the notification queues.
 	// This should call Deregister() and then close the connection.
-	virtual void Shutdown() = 0;
+	virtual void Shutdown();
+
+	// Determines whether the server is shut down. This signal is set by
+	// Deregister().
+	virtual bool IsShutdown();
 
 protected:
 	// Tell the associated server to deregister the connection. If no
-	// server connection was associated, this does nothing.
+	// server connection was associated, this just cleans up the connection
+	// object.
 	virtual void Deregister();
+
+	bool is_shutdown_;
 };
 }  // namespace siot
 }  // namespace toolbox
