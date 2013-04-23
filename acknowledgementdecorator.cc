@@ -116,5 +116,11 @@ AcknowledgementDecorator::Shutdown()
 	wrapped_->Shutdown();
 }
 
+bool
+AcknowledgementDecorator::IsShutdown()
+{
+	return wrapped_->IsShutdown();
+}
+
 }  // namespace siot
 }  // namespace toolbox
