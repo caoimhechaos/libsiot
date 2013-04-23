@@ -152,6 +152,7 @@ UNIXSocketConnection::SetBlocking(bool blocking)
 void
 UNIXSocketConnection::Shutdown()
 {
+	eof_ = true;
 	Deregister();
 	shutdown(socket_, SHUT_RDWR);
 	close(socket_);
