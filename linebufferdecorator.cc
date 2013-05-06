@@ -39,10 +39,8 @@ namespace siot
 using std::string;
 
 LineBufferDecorator::LineBufferDecorator(Connection* wrapped, bool own)
-: wrapped_(wrapped), owned_(0)
+: wrapped_(wrapped), owned_(own)
 {
-	if (own)
-		owned_.Reset(wrapped);
 }
 
 LineBufferDecorator::~LineBufferDecorator()
@@ -127,7 +125,11 @@ LineBufferDecorator::SetBlocking(bool blocking)
 void
 LineBufferDecorator::Shutdown()
 {
-	wrapped_->Shutdown();
+	// We have to deregister ourselves as the client isn't registered.
+	Deregister();
+	if (owned_)
+		wrapped_->Shutdown();
+	delete this;
 }
 
 bool

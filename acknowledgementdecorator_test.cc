@@ -42,16 +42,16 @@ class AcknowledgementDecoratorTest : public ::testing::Test
 
 TEST_F(AcknowledgementDecoratorTest, ReadRepeatedly)
 {
-	MockConnection* mc = new MockConnection;
-	AcknowledgementDecorator ack(mc, 512);
+	MockConnection mc;
+	AcknowledgementDecorator ack(&mc, 512);
 	string rv;
 
-	EXPECT_CALL(*mc, Receive(0, 0))
+	EXPECT_CALL(mc, Receive(0, 0))
 		.WillOnce(Return("In... "))
 		.WillOnce(Return("wait for it... "))
 		.WillOnce(Return("credible!"))
 		.WillOnce(Return(""));
-	EXPECT_CALL(*mc, IsEOF())
+	EXPECT_CALL(mc, IsEOF())
 		.Times(2)
 		.WillRepeatedly(Return(true));
 
@@ -69,10 +69,10 @@ TEST_F(AcknowledgementDecoratorTest, ReadRepeatedly)
 
 TEST_F(AcknowledgementDecoratorTest, AckLess)
 {
-	MockConnection* mc = new MockConnection;
-	AcknowledgementDecorator ack(mc, 512);
+	MockConnection mc;
+	AcknowledgementDecorator ack(&mc, 512);
 
-	EXPECT_CALL(*mc, Receive(0, 0))
+	EXPECT_CALL(mc, Receive(0, 0))
 		.WillOnce(Return("0123456789"))
 		.WillOnce(Return(""));
 

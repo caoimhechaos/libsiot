@@ -41,13 +41,13 @@ class LineBufferDecoratorTest : public ::testing::Test
 
 TEST_F(LineBufferDecoratorTest, ReadJustOneLine)
 {
-	MockConnection* mc = new MockConnection;
-	LineBufferDecorator lb(mc);
+	MockConnection mc;
+	LineBufferDecorator lb(&mc);
 
-	EXPECT_CALL(*mc, Receive(-1, 0))
+	EXPECT_CALL(mc, Receive(-1, 0))
 		.WillOnce(Return("hello world\n"))
 		.WillOnce(Return(""));
-	EXPECT_CALL(*mc, IsEOF())
+	EXPECT_CALL(mc, IsEOF())
 		.WillOnce(Return(false))
 		.WillOnce(Return(false));
 
@@ -57,13 +57,13 @@ TEST_F(LineBufferDecoratorTest, ReadJustOneLine)
 
 TEST_F(LineBufferDecoratorTest, ReadJustOneLineCRLF)
 {
-	MockConnection* mc = new MockConnection;
-	LineBufferDecorator lb(mc);
+	MockConnection mc;
+	LineBufferDecorator lb(&mc);
 
-	EXPECT_CALL(*mc, Receive(-1, 0))
+	EXPECT_CALL(mc, Receive(-1, 0))
 		.WillOnce(Return("hello world\r\n"))
 		.WillOnce(Return(""));
-	EXPECT_CALL(*mc, IsEOF())
+	EXPECT_CALL(mc, IsEOF())
 		.WillOnce(Return(false))
 		.WillOnce(Return(false));
 
@@ -73,14 +73,14 @@ TEST_F(LineBufferDecoratorTest, ReadJustOneLineCRLF)
 
 TEST_F(LineBufferDecoratorTest, MultiLineOnePacket)
 {
-	MockConnection* mc = new MockConnection;
-	LineBufferDecorator lb(mc);
+	MockConnection mc;
+	LineBufferDecorator lb(&mc);
 
-	EXPECT_CALL(*mc, Receive(-1, 0))
+	EXPECT_CALL(mc, Receive(-1, 0))
 		.WillOnce(Return("hello world\nHow's life?\nSomething weird"))
 		.WillOnce(Return(" happened to the last line.\n"))
 		.WillOnce(Return(""));
-	EXPECT_CALL(*mc, IsEOF())
+	EXPECT_CALL(mc, IsEOF())
 		.Times(3)
 		.WillRepeatedly(Return(false));
 

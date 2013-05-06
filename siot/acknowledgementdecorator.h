@@ -90,7 +90,7 @@ public:
 
 private:
 	Connection* wrapped_;
-	ScopedPtr<Connection> owned_;
+	const bool owned_;
 	const uint64_t max_buffer_size_;
 	string buffer_;
 };

@@ -41,10 +41,8 @@ using std::string;
 
 AcknowledgementDecorator::AcknowledgementDecorator(
 		Connection* wrapped, uint64_t max_buffer_size, bool own)
-: wrapped_(wrapped), owned_(0), max_buffer_size_(max_buffer_size)
+: wrapped_(wrapped), owned_(own), max_buffer_size_(max_buffer_size)
 {
-	if (own)
-		owned_.Reset(wrapped);
 }
 
 AcknowledgementDecorator::~AcknowledgementDecorator()
@@ -115,8 +113,8 @@ AcknowledgementDecorator::Shutdown()
 {
 	// We have to deregister ourselves as the client isn't registered.
 	Deregister();
-	if (!owned_.IsNull())
-		owned_->Shutdown();
+	if (owned_)
+		wrapped_->Shutdown();
 	delete this;
 }
 
