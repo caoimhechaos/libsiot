@@ -113,7 +113,11 @@ AcknowledgementDecorator::SetBlocking(bool blocking)
 void
 AcknowledgementDecorator::Shutdown()
 {
-	wrapped_->Shutdown();
+	// We have to deregister ourselves as the client isn't registered.
+	Deregister();
+	if (!owned_.IsNull())
+		owned_->Shutdown();
+	delete this;
 }
 
 bool
