@@ -77,7 +77,7 @@ public:
 
 private:
 	Connection* wrapped_;
-	ScopedPtr<Connection> owned_;
+	const bool owned_;
 	string remainder_;
 	std::list<string> remaining_lines_;
 };
