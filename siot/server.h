@@ -154,6 +154,12 @@ public:
 	// Listen(). This will take ownership of "context".
 	Server* SetServerSSLContext(const ServerSSLContext* context);
 
+	// Marks the given connection as to be shut down when the next thread
+	// becomes free. This is useful for shutting down connections from
+	// handlers, which would otherwise block because the handlers are
+	// already holding a lock on the connection pool.
+	void DeferShutdown(Connection* conn);
+
 	// Removes the given connection from the pool of connections which
 	// are watched (i.e. we stop monitoring events and so forth).
 	void DequeueConnection(Connection* conn);

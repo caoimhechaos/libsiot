@@ -488,6 +488,15 @@ Server::SetServerSSLContext(const ServerSSLContext* context)
 }
 
 void
+Server::DeferShutdown(Connection* conn)
+{
+	// Run conn->Shutdown(). Will not take the connection lock.
+	google::protobuf::Closure* cc =
+		google::protobuf::NewCallback(conn, &Connection::Shutdown);
+	executor_.Add(cc);
+}
+
+void
 Server::DequeueConnection(Connection* conn)
 {
 	for (std::pair<int, Connection*> it : connections_)
@@ -531,6 +540,16 @@ void
 Connection::Shutdown()
 {
 	Deregister();
+}
+
+void
+Connection::DeferredShutdown()
+{
+	Server* srv = GetServer();
+	if (srv)
+		srv->DeferShutdown(this);
+	else
+		Shutdown();
 }
 
 void
