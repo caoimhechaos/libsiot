@@ -77,6 +77,11 @@ public:
 	// This should call Deregister() and then close the connection.
 	virtual void Shutdown();
 
+	// If a server is associated with the connection, instruct the server
+	// to shut the connection down on the next occasion. Otherwise, just
+	// run the shutdown method.
+	virtual void DeferredShutdown();
+
 	// Determines whether the server is shut down. This signal is set by
 	// Deregister().
 	virtual bool IsShutdown();
