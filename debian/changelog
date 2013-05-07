@@ -1,3 +1,11 @@
+libsiot (0.3.1-1) unstable; urgency=low
+
+  * Stop accepting 0 as a size for unix socket buffers, handle it by resizing
+    the buffer to 65536 just like in OpenSSL. (Fixes libhttp-server for HTTP
+    traffic.)
+
+ -- Caoimhe Chaos <caoimhechaos@protonmail.com>  Wed, 08 May 2013 00:44:37 +0200
+
 libsiot (0.3.0-1) unstable; urgency=low
 
   * Redo all of the locking to make SSL connections work properly (they're more
