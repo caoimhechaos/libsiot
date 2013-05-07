@@ -1,3 +1,11 @@
+libsiot (0.3.0-1) unstable; urgency=low
+
+  * Redo all of the locking to make SSL connections work properly (they're more
+    prone to race conditions).
+  * Add a separate thread for reaping closed connections.
+
+ -- Caoimhe Chaos <caoimhechaos@protonmail.com>  Tue, 07 May 2013 19:18:13 +0200
+
 libsiot (0.2.3-1) unstable; urgency=low
 
   * Added a way to wrap connections in decorators before they're used in the
