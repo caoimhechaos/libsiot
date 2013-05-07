@@ -84,7 +84,7 @@ string
 UNIXSocketConnection::Receive(size_t maxlen, int flags)
 {
 	ssize_t len;
-	if (maxlen > 65536)
+	if (maxlen <= 0 || maxlen > 65536)
 		len = 65536;
 	else
 		len = maxlen;
