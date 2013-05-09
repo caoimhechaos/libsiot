@@ -1,3 +1,10 @@
+libsiot (0.4.0-1) unstable; urgency=low
+
+  * Add a decorator for range limited buffers in a stream (e.g. for protocols
+    which limit data fields by length).
+
+ -- Caoimhe Chaos <caoimhechaos@protonmail.com>  Thu, 09 May 2013 21:52:04 +0200
+
 libsiot (0.3.1-1) unstable; urgency=low
 
   * Stop accepting 0 as a size for unix socket buffers, handle it by resizing
