@@ -31,6 +31,8 @@
 #define INCLUDED_SIOT_CONNECTION_H 1
 
 #include <string>
+#include <toolbox/scopedptr.h>
+#include <thread++/mutex.h>
 
 namespace toolbox
 {
@@ -40,7 +42,7 @@ using std::string;
 class Server;
 
 // Prototype of a connection. The implementation may be OS specific.
-class Connection
+class Connection : public threadpp::Mutex
 {
 public:
 	// Some standard initializations for new connections.
@@ -86,12 +88,18 @@ public:
 	// Deregister().
 	virtual bool IsShutdown();
 
+	// Inherited from Mutex.
+	virtual void Lock();
+	virtual bool TryLock();
+	virtual void Unlock();
+
 protected:
 	// Tell the associated server to deregister the connection. If no
 	// server connection was associated, this just cleans up the connection
 	// object.
 	virtual void Deregister();
 
+	ScopedPtr<Mutex> mtx_;
 	bool is_shutdown_;
 };
 }  // namespace siot
