@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT([libsiot], [0.4.1], [caoimhechaos@protonmail.com])
+AC_INIT([libsiot], [0.4.2], [caoimhechaos@protonmail.com])
 AC_CONFIG_SRCDIR([server.cc])
 AC_CONFIG_HEADERS([config.h])
 
