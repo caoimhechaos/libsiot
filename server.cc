@@ -528,7 +528,7 @@ Server::SetMaxIdle(int max_idle)
 }
 
 Connection::Connection()
-: is_shutdown_(false)
+: mtx_(Mutex::Create()), is_shutdown_(false)
 {
 }
 
@@ -565,6 +565,24 @@ bool
 Connection::IsShutdown()
 {
 	return is_shutdown_;
+}
+
+void
+Connection::Lock()
+{
+	mtx_->Lock();
+}
+
+bool
+Connection::TryLock()
+{
+	return mtx_->TryLock();
+}
+
+void
+Connection::Unlock()
+{
+	mtx_->Unlock();
 }
 
 ConnectionCallback::~ConnectionCallback()
