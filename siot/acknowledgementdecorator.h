@@ -67,7 +67,7 @@ public:
 
 	// Receive an unit of data from the connected peer. This will return
 	// all unacknowledged data, including the data which was just read.
-	virtual string Receive(size_t ignored = 0, int flags = 0);
+	virtual string Receive(size_t maxlen = 0, int flags = 0);
 
 	// Acknowledge "bytes" number of bytes from the internal buffer so
 	// they won't be returned again on the next call.
@@ -78,6 +78,11 @@ public:
 	// that no unacknowledged data could possibly still exist on the
 	// connection.
 	virtual bool IsEOF();
+
+	// Enable/disable automatic acknowledgement of request data. If this is
+	// enabled, Receive() will acknowledge data automatically, just like in
+	// a regular connection.
+	virtual void SetAutoAck(bool autoack);
 
 	// Forwarded to wrapped connection object.
 	virtual ssize_t Send(string data, int flags = 0);
@@ -92,6 +97,7 @@ private:
 	Connection* wrapped_;
 	const bool owned_;
 	const uint64_t max_buffer_size_;
+	bool autoack_;
 	string buffer_;
 };
 

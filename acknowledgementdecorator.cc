@@ -41,7 +41,8 @@ using std::string;
 
 AcknowledgementDecorator::AcknowledgementDecorator(
 		Connection* wrapped, uint64_t max_buffer_size, bool own)
-: wrapped_(wrapped), owned_(own), max_buffer_size_(max_buffer_size)
+: wrapped_(wrapped), owned_(own), max_buffer_size_(max_buffer_size),
+	autoack_(false)
 {
 }
 
@@ -50,15 +51,24 @@ AcknowledgementDecorator::~AcknowledgementDecorator()
 }
 
 string
-AcknowledgementDecorator::Receive(size_t ignored, int flags)
+AcknowledgementDecorator::Receive(size_t maxlen, int flags)
 {
-	string data = wrapped_->Receive(0, flags);
+	const size_t len = maxlen - buffer_.length();
+	string data = wrapped_->Receive(maxlen > buffer_.length() ? len : 0,
+			flags);
 	if (data.length() > 0)
 		buffer_ += data;
 
 	if (buffer_.length() > max_buffer_size_)
 		throw ClientConnectionException("buffer size exceeded",
 				"The specified buffer size has been exceeded");
+
+	if (autoack_)
+	{
+		data = buffer_;
+		buffer_ = string();
+		return data;
+	}
 
 	return buffer_;
 }
@@ -70,6 +80,12 @@ AcknowledgementDecorator::Acknowledge(size_t bytes)
 		return false;
 	buffer_ = buffer_.substr(bytes);
 	return true;
+}
+
+void
+AcknowledgementDecorator::SetAutoAck(bool autoack)
+{
+	autoack_ = autoack;
 }
 
 ssize_t
