@@ -47,6 +47,8 @@ RangeReaderDecorator::RangeReaderDecorator(Connection* wrapped,
 
 RangeReaderDecorator::~RangeReaderDecorator()
 {
+	// Ensure we're the only ones operating on the connection.
+	Lock();
 }
 
 string

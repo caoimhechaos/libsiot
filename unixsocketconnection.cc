@@ -78,6 +78,8 @@ UNIXSocketConnection::UNIXSocketConnection(Server* srv, int socketid,
 
 UNIXSocketConnection::~UNIXSocketConnection()
 {
+	// Ensure we're the only ones operating on the connection.
+	Lock();
 }
 
 string

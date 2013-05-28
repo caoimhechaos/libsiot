@@ -45,6 +45,8 @@ LineBufferDecorator::LineBufferDecorator(Connection* wrapped, bool own)
 
 LineBufferDecorator::~LineBufferDecorator()
 {
+	// Ensure we're the only ones operating on the connection.
+	Lock();
 }
 
 string
