@@ -105,6 +105,9 @@ static ExpMap<int64_t> client_connection_errors("client-connection-errors");
 static ExpMap<int64_t> accept_errors("accept-errors");
 #ifdef HAVE_EPOLL_CREATE
 static ExpMap<int64_t> epoll_errors("siot-epoll-errors");
+
+// This should always be 0, but we leave it here for spotting bugs.
+static ExpVar<int64_t> read_after_close("read-after-close");
 #endif /* HAVE_EPOLL_CREATE */
 #endif /* _POSIX_SOURCE */
 
@@ -391,6 +394,14 @@ Server::ListenEpoll()
 				else if (conn && (events[n].events & EPOLLIN))
 				{
 					// Call connected_->DataReady(conn);
+					connections_lock_->Lock();
+					if (connections_.find(events[n].data.fd)
+							== connections_.end())
+					{
+						connections_lock_->Unlock();
+						read_after_close.Add(1);
+						continue;
+					}
 					conn->ReadLock();
 					google::protobuf::Closure* cc =
 						google::protobuf::NewCallback(
@@ -401,6 +412,7 @@ Server::ListenEpoll()
 								this,
 								&Server::LockCallAndUnlock,
 								cc, conn));
+					connections_lock_->Unlock();
 				}
 			}
 		}
