@@ -42,7 +42,7 @@ using std::string;
 class Server;
 
 // Prototype of a connection. The implementation may be OS specific.
-class Connection : public threadpp::Mutex
+class Connection : public threadpp::ReadWriteMutex
 {
 public:
 	// Some standard initializations for new connections.
@@ -93,13 +93,17 @@ public:
 	virtual bool TryLock();
 	virtual void Unlock();
 
+	// Inherited from ReadWriteMutex.
+	virtual void ReadLock();
+	virtual bool TryReadLock();
+
 protected:
 	// Tell the associated server to deregister the connection. If no
 	// server connection was associated, this just cleans up the connection
 	// object.
 	virtual void Deregister();
 
-	ScopedPtr<Mutex> mtx_;
+	ScopedPtr<ReadWriteMutex> mtx_;
 	bool is_shutdown_;
 };
 }  // namespace siot

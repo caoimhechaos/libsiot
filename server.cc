@@ -528,7 +528,7 @@ Server::SetMaxIdle(int max_idle)
 }
 
 Connection::Connection()
-: mtx_(Mutex::Create()), is_shutdown_(false)
+: mtx_(ReadWriteMutex::Create()), is_shutdown_(false)
 {
 }
 
@@ -583,6 +583,18 @@ void
 Connection::Unlock()
 {
 	mtx_->Unlock();
+}
+
+void
+Connection::ReadLock()
+{
+	mtx_->ReadLock();
+}
+
+bool
+Connection::TryReadLock()
+{
+	return mtx_->TryReadLock();
 }
 
 ConnectionCallback::~ConnectionCallback()
