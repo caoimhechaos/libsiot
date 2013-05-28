@@ -343,6 +343,7 @@ Server::ListenEpoll()
 				}
 
 				// Run connected_->ConnectionEstablished(conn)
+				conn->ReadLock();
 				google::protobuf::Closure* cc =
 					google::protobuf::NewCallback(
 							connected_.Get(),
@@ -351,7 +352,7 @@ Server::ListenEpoll()
 				executor_.Add(google::protobuf::NewCallback(
 							this,
 							&Server::LockCallAndUnlock,
-							cc));
+							cc, conn));
 			}
 			else if (events[n].data.fd > 0)
 			{
@@ -361,6 +362,7 @@ Server::ListenEpoll()
 								EPOLLRDHUP)))
 				{
 					// Call connected_->ConnectionTerminated(conn);
+					conn->ReadLock();
 					google::protobuf::Closure* cc =
 						google::protobuf::NewCallback(
 							connected_.Get(),
@@ -369,12 +371,13 @@ Server::ListenEpoll()
 					executor_.Add(google::protobuf::NewCallback(
 								this,
 								&Server::LockCallAndUnlock,
-								cc));
+								cc, conn));
 					conn->Shutdown();
 				}
 				else if (conn && (events[n].events & EPOLLERR))
 				{
 					// Call connected_->Error(conn);
+					conn->ReadLock();
 					google::protobuf::Closure* cc =
 						google::protobuf::NewCallback(
 							connected_.Get(),
@@ -383,11 +386,12 @@ Server::ListenEpoll()
 					executor_.Add(google::protobuf::NewCallback(
 								this,
 								&Server::LockCallAndUnlock,
-								cc));
+								cc, conn));
 				}
 				else if (conn && (events[n].events & EPOLLIN))
 				{
 					// Call connected_->DataReady(conn);
+					conn->ReadLock();
 					google::protobuf::Closure* cc =
 						google::protobuf::NewCallback(
 							connected_.Get(),
@@ -396,7 +400,7 @@ Server::ListenEpoll()
 					executor_.Add(google::protobuf::NewCallback(
 								this,
 								&Server::LockCallAndUnlock,
-								cc));
+								cc, conn));
 				}
 			}
 		}
@@ -459,10 +463,11 @@ Server::ReapConnectionsEpoll()
 #endif /* HAVE_EPOLL_CREATE */
 
 void
-Server::LockCallAndUnlock(Closure* c)
+Server::LockCallAndUnlock(Closure* c, Connection* conn)
 {
 	ReadMutexLock l(connections_lock_.Get());
 	c->Run();
+	conn->Unlock();
 }
 #endif /* _POSIX_SOURCE */
 

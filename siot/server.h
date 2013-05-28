@@ -195,7 +195,7 @@ private:
 	std::map<int, Connection*> connections_;
 	ScopedPtr<ReadWriteMutex> connections_lock_;
 	std::condition_variable connections_updated_;
-	void LockCallAndUnlock(Closure* c);
+	void LockCallAndUnlock(Closure* c, Connection* conn);
 
 	void ListenPoll();
 #ifdef HAVE_SELECT
