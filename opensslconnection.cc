@@ -109,6 +109,8 @@ OpenSSLConnection::OpenSSLConnection(Server* srv, int socketid,
 
 OpenSSLConnection::~OpenSSLConnection()
 {
+	// Ensure we're the only ones operating on the connection.
+	Lock();
 }
 
 void

@@ -48,6 +48,8 @@ AcknowledgementDecorator::AcknowledgementDecorator(
 
 AcknowledgementDecorator::~AcknowledgementDecorator()
 {
+	// Ensure we're the only ones operating on the connection.
+	Lock();
 }
 
 string
