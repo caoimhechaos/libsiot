@@ -48,8 +48,6 @@ AcknowledgementDecorator::AcknowledgementDecorator(
 
 AcknowledgementDecorator::~AcknowledgementDecorator()
 {
-	// Ensure we're the only ones operating on the connection.
-	Lock();
 }
 
 string
@@ -131,6 +129,9 @@ AcknowledgementDecorator::Shutdown()
 {
 	// We have to deregister ourselves as the client isn't registered.
 	Deregister();
+
+	// Ensure we're the only ones operating on the connection.
+	Lock();
 	if (owned_)
 		wrapped_->Shutdown();
 	delete this;

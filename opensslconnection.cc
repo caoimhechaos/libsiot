@@ -109,13 +109,13 @@ OpenSSLConnection::OpenSSLConnection(Server* srv, int socketid,
 
 OpenSSLConnection::~OpenSSLConnection()
 {
-	// Ensure we're the only ones operating on the connection.
-	Lock();
 }
 
 void
 OpenSSLConnection::Shutdown()
 {
+	Lock();
+	// Ensure we're the only ones operating on the connection.
 	MutexLock l(ssl_mtx_);
 	Deregister();
 	int is_down = SSL_get_shutdown(ssl_handle_);
