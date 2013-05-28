@@ -45,8 +45,6 @@ LineBufferDecorator::LineBufferDecorator(Connection* wrapped, bool own)
 
 LineBufferDecorator::~LineBufferDecorator()
 {
-	// Ensure we're the only ones operating on the connection.
-	Lock();
 }
 
 string
@@ -129,6 +127,9 @@ LineBufferDecorator::Shutdown()
 {
 	// We have to deregister ourselves as the client isn't registered.
 	Deregister();
+
+	// Ensure we're the only ones operating on the connection.
+	Lock();
 	if (owned_)
 		wrapped_->Shutdown();
 	delete this;

@@ -47,8 +47,6 @@ RangeReaderDecorator::RangeReaderDecorator(Connection* wrapped,
 
 RangeReaderDecorator::~RangeReaderDecorator()
 {
-	// Ensure we're the only ones operating on the connection.
-	Lock();
 }
 
 string
@@ -89,6 +87,7 @@ void
 RangeReaderDecorator::Shutdown()
 {
 	Deregister();
+	Lock();
 	// Eat all remaining data.
 	while (offset_ < max_size_ && !wrapped_->IsEOF())
 	{

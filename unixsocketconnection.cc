@@ -78,8 +78,6 @@ UNIXSocketConnection::UNIXSocketConnection(Server* srv, int socketid,
 
 UNIXSocketConnection::~UNIXSocketConnection()
 {
-	// Ensure we're the only ones operating on the connection.
-	Lock();
 }
 
 string
@@ -156,6 +154,9 @@ UNIXSocketConnection::Shutdown()
 {
 	eof_ = true;
 	Deregister();
+
+	// Ensure we're the only ones operating on the connection.
+	Lock();
 	shutdown(socket_, SHUT_RDWR);
 	close(socket_);
 	delete this;
