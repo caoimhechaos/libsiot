@@ -114,10 +114,10 @@ OpenSSLConnection::~OpenSSLConnection()
 void
 OpenSSLConnection::Shutdown()
 {
-	Lock();
 	// Ensure we're the only ones operating on the connection.
 	MutexLock l(ssl_mtx_);
 	Deregister();
+	Lock();
 	int is_down = SSL_get_shutdown(ssl_handle_);
 	if (is_down >= 0)
 		SSL_shutdown(ssl_handle_);
