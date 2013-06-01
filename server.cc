@@ -365,16 +365,12 @@ Server::ListenEpoll()
 								EPOLLRDHUP)))
 				{
 					// Call connected_->ConnectionTerminated(conn);
-					conn->ReadLock();
 					google::protobuf::Closure* cc =
 						google::protobuf::NewCallback(
 							connected_.Get(),
 							&ConnectionCallback::ConnectionTerminated,
 							conn);
-					executor_.Add(google::protobuf::NewCallback(
-								this,
-								&Server::LockCallAndUnlock,
-								cc, conn));
+					executor_.Add(cc);
 					conn->Shutdown();
 				}
 				else if (conn && (events[n].events & EPOLLERR))
