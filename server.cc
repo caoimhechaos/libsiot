@@ -346,6 +346,7 @@ Server::ListenEpoll()
 				}
 
 				// Run connected_->ConnectionEstablished(conn)
+				conn = connections_[clientfd];
 				conn->ReadLock();
 				google::protobuf::Closure* cc =
 					google::protobuf::NewCallback(
