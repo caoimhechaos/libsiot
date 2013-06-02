@@ -391,7 +391,7 @@ Server::ListenEpoll()
 				else if (conn && (events[n].events & EPOLLIN))
 				{
 					// Call connected_->DataReady(conn);
-					connections_lock_->Lock();
+					connections_lock_->ReadLock();
 					if (connections_.find(events[n].data.fd)
 							== connections_.end())
 					{
